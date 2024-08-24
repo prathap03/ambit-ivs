@@ -47,13 +47,13 @@ export default function Home() {
   const downloadExcel = () => {
     const wsData = invoiceData.map((data: any, index: number) => ({
       "S.No #": (index + 1).toString(),
-      Name: data.clientName,
+      Name: data.client_name,
       Date: data.date,
-      "File / Application Number": data.fileNumber,
-      Opinion: data.opinion ? `${data.opinionAmount}/-` : "-",
-      VETTING: data.vetting ? `${data.vettingAmount}/-` : "-",
-      MODTD: data.modt ? `${data.modtAmount}/-` : "-",
-      "AMOUNT IN RS": `${data.totalAmount}/-`,
+      "File / Application Number": data.file_number,
+      Opinion: data.opinion ? `${data.opinion_amount}/-` : "-",
+      VETTING: data.vetting ? `${data.vetting_amount}/-` : "-",
+      MODTD: data.modt ? `${data.modt_amount}/-` : "-",
+      "AMOUNT IN RS": `${data.total_amount}/-`,
     }));
 
     wsData.push({

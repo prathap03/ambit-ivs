@@ -144,14 +144,14 @@ export default function Home() {
         
         (payload) => {
           setInvoiceData((prev) => [...prev, payload.new]);
-          setTotalAmount((prev) => prev + payload.new.totalAmount);
+          setTotalAmount((prev) => prev + payload.new.total_amount);
         }
       ).on(
         "postgres_changes",
         { event: "DELETE", schema: "public", table: "invoices" },
         (payload) => {
           setInvoiceData((prev) => prev.filter((invoice) => invoice.id !== payload.old.id));
-          setTotalAmount((prev) => prev - payload.old.totalAmount);
+          setTotalAmount((prev) => prev - payload.old.total_amount);
         }
       )
       .on(

@@ -141,9 +141,28 @@ export default function Home() {
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "invoices" },
+        
         (payload) => {
           setInvoiceData((prev) => [...prev, payload.new]);
           setTotalAmount((prev) => prev + payload.new.totalAmount);
+        }
+      ).on(
+        "postgres_changes",
+        { event: "DELETE", schema: "public", table: "invoices" },
+        (payload) => {
+          setInvoiceData((prev) => prev.filter((invoice) => invoice.id !== payload.old.id));
+          setTotalAmount((prev) => prev - payload.old.totalAmount);
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "invoices" },
+        (payload) => {
+          setInvoiceData((prev) => {
+            return prev.map((invoice) =>
+              invoice.id === payload.new.id ? { ...invoice, ...payload.new } : invoice
+            );
+          });
         }
       )
       .subscribe();

@@ -160,7 +160,8 @@ export default function Home() {
         (payload) => {
           setInvoiceData((prev) => {
             return prev.map((invoice) =>
-              invoice.id === payload.new.id ? { ...invoice, ...payload.new } : invoice
+              invoice.id === payload.new.id ? { ...invoice, ...payload.new } : invoice,
+              setTotalAmount((prev) => prev - payload.old.total_amount + payload.new.total_amount)
             );
           });
         }

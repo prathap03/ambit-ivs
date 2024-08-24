@@ -107,13 +107,12 @@ export default function Home() {
     );
   };
 
- 
   const fetchInvoices = useCallback(async () => {
     if (!selectedDate.year || !selectedDate.month || !supabase) return;
 
     // Define the start and end dates for the month
-    const startDate = new Date(selectedDate.year, selectedDate.month , 1); // Start of the month
-    const endDate = new Date(selectedDate.year, selectedDate.month+1, 1); // Start of the next month
+    const startDate = new Date(selectedDate.year, selectedDate.month, 1); // Start of the month
+    const endDate = new Date(selectedDate.year, selectedDate.month + 1, 1); // Start of the next month
 
     const { data, error } = await supabase
       .from("invoices")
@@ -128,7 +127,9 @@ export default function Home() {
     }
 
     setInvoiceData(data);
-    setTotalAmount(data.reduce((acc, invoice) => acc + invoice.total_amount, 0));
+    setTotalAmount(
+      data.reduce((acc, invoice) => acc + invoice.total_amount, 0)
+    );
   }, [selectedDate]);
 
   useEffect(() => {
@@ -141,16 +142,19 @@ export default function Home() {
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "invoices" },
-        
+
         (payload) => {
           setInvoiceData((prev) => [...prev, payload.new]);
           setTotalAmount((prev) => prev + payload.new.total_amount);
         }
-      ).on(
+      )
+      .on(
         "postgres_changes",
         { event: "DELETE", schema: "public", table: "invoices" },
         (payload) => {
-          setInvoiceData((prev) => prev.filter((invoice) => invoice.id !== payload.old.id));
+          setInvoiceData((prev) =>
+            prev.filter((invoice) => invoice.id !== payload.old.id)
+          );
           setTotalAmount((prev) => prev - payload.old.total_amount);
         }
       )
@@ -159,10 +163,18 @@ export default function Home() {
         { event: "UPDATE", schema: "public", table: "invoices" },
         (payload) => {
           setInvoiceData((prev) => {
-            return prev.map((invoice) =>
-              invoice.id === payload.new.id ? { ...invoice, ...payload.new } : invoice,
-              setTotalAmount((prev) => prev - payload.old.total_amount + payload.new.total_amount)
+            const updatedData = prev.map((invoice) =>
+              invoice.id === payload.new.id
+                ? { ...invoice, ...payload.new }
+                : invoice
             );
+            // Calculate the new total amount after the update
+            const newTotalAmount = updatedData.reduce(
+              (acc, invoice) => acc + invoice.total_amount,
+              0
+            );
+            setTotalAmount(newTotalAmount);
+            return updatedData;
           });
         }
       )
@@ -174,7 +186,7 @@ export default function Home() {
         supabase.removeChannel(channel);
       }
     };
-  }, [selectedDate,fetchInvoices]);
+  }, [selectedDate, fetchInvoices]);
 
   const handleDateChange = (date: Date): void => {
     setSelectedDate(date);
@@ -290,8 +302,10 @@ export default function Home() {
                       className="text-center text-[1rem] h-[2rem]  MonaSans font-[400]"
                     >
                       Click on{" "}
-                      <span className="font-semibold">{`&quot`}Add Invoice{`&quot`}</span> to
-                      add new invoice
+                      <span className="font-semibold">
+                        {`&quot`}Add Invoice{`&quot`}
+                      </span>{" "}
+                      to add new invoice
                     </TableCell>
                   </TableRow>
                 </>

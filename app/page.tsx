@@ -107,33 +107,10 @@ export default function Home() {
     );
   };
 
-  const fetchIv = async () => {
-    if (!selectedDate.year || !selectedDate.month || !supabase) return;
-
-    // Define the start and end dates for the month
-    const startDate = new Date(selectedDate.year, selectedDate.month, 1); // Start of the month
-    const endDate = new Date(selectedDate.year, selectedDate.month + 1, 1); // Start of the next month
-
-    const { data, error } = await supabase
-      .from("invoices")
-      .select("*")
-      .gte("date", startDate.toISOString()) // Greater than or equal to the start date
-      .lt("date", endDate.toISOString()) // Less than the start date of the next month
-      .order("date", { ascending: true });
-
-    if (error) {
-      console.error(error);
-      return;
-    }
-
-    setInvoiceData(data);
-    setTotalAmount(
-      data.reduce((acc, invoice) => acc + invoice.total_amount, 0)
-    );
-  }
+ 
 
   const fetchInvoices = useCallback(async () => {
-    if (!selectedDate.year || !selectedDate.month || !supabase) return;
+    if (!selectedDate.year || selectedDate.month<0 || !supabase) return;
 
     // Define the start and end dates for the month
     const startDate = new Date(selectedDate.year, selectedDate.month, 1); // Start of the month

@@ -12,7 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import YearMonthPicker from "@/components/ui/year-month-picker";
-import { ScrollArea } from "@/components/ui/scroll-area"; // Use this instead of Radix UI's ScrollArea
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"; // Use this instead of Radix UI's ScrollArea
 import { useCallback, useEffect, useState } from "react";
 import * as XLSX from "xlsx";
 import * as XLSXStyle from "sheetjs-style";
@@ -107,6 +107,31 @@ export default function Home() {
     );
   };
 
+  const fetchIv = async () => {
+    if (!selectedDate.year || !selectedDate.month || !supabase) return;
+
+    // Define the start and end dates for the month
+    const startDate = new Date(selectedDate.year, selectedDate.month, 1); // Start of the month
+    const endDate = new Date(selectedDate.year, selectedDate.month + 1, 1); // Start of the next month
+
+    const { data, error } = await supabase
+      .from("invoices")
+      .select("*")
+      .gte("date", startDate.toISOString()) // Greater than or equal to the start date
+      .lt("date", endDate.toISOString()) // Less than the start date of the next month
+      .order("date", { ascending: true });
+
+    if (error) {
+      console.error(error);
+      return;
+    }
+
+    setInvoiceData(data);
+    setTotalAmount(
+      data.reduce((acc, invoice) => acc + invoice.total_amount, 0)
+    );
+  }
+
   const fetchInvoices = useCallback(async () => {
     if (!selectedDate.year || !selectedDate.month || !supabase) return;
 
@@ -143,20 +168,12 @@ export default function Home() {
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "invoices" },
 
-        (payload) => {
-          setInvoiceData((prev) => [...prev, payload.new]);
-          setTotalAmount((prev) => prev + payload.new.total_amount);
-        }
+      fetchInvoices
       )
       .on(
         "postgres_changes",
         { event: "DELETE", schema: "public", table: "invoices" },
-        (payload) => {
-          setInvoiceData((prev) =>
-            prev.filter((invoice) => invoice.id !== payload.old.id)
-          );
-          setTotalAmount((prev) => prev - payload.old.total_amount);
-        }
+        fetchInvoices
       )
       .on(
         "postgres_changes",
@@ -194,7 +211,7 @@ export default function Home() {
   };
 
   return (
-    <main className="flex max-h-screen flex-col items-center justify-between dark:bg-black p-5 overflow-hidden">
+    <main className="flex max-h-screen flex-col items-center justify-between dark:bg-black p-5 md:overflow-hidden">
       <div className="flex gap-2 justify-end w-full">
         <YearMonthPicker
           selectedYear={selectedDate.year}
@@ -216,8 +233,8 @@ export default function Home() {
         </Button>
       </div>
       <div className="flex outline-1 outline rounded-md shadow-md flex-grow h-screen w-full m-5">
-        <ScrollArea className="w-full !h-[calc(100vh_-_145px)]">
-          <Table>
+        <ScrollArea  className="w-full  !h-[calc(100vh_-_145px)]">
+          <Table className="w-full">
             <TableCaption>
               Details of {months[selectedDate.month]}, {selectedDate.year}
             </TableCaption>
@@ -290,7 +307,7 @@ export default function Home() {
                   <TableRow>
                     <TableCell
                       colSpan={8}
-                      className="text-center text-[2rem] h-[5rem]  MonaSans font-[600]"
+                      className="text-center text-[1.3rem] md:text-[2rem] h-[5rem]  MonaSans font-[600]"
                     >
                       No invoices found for {months[selectedDate.month]},{" "}
                       {selectedDate.year}
@@ -303,7 +320,7 @@ export default function Home() {
                     >
                       Click on{" "}
                       <span className="font-semibold">
-                        {`&quot`}Add Invoice{`&quot`}
+                        &quot;Add Invoice&quot;
                       </span>{" "}
                       to add new invoice
                     </TableCell>
@@ -327,6 +344,8 @@ export default function Home() {
               </TableFooter>
             )}
           </Table>
+          <ScrollBar orientation="vertical" />
+          <ScrollBar orientation="horizontal" />
         </ScrollArea>
       </div>
     </main>

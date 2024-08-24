@@ -7,8 +7,8 @@ const YearMonthPicker = ({ selectedYear, selectedMonth, onChange }: { selectedYe
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 20 }, (_, i) => currentYear - 10 + i);
   const months = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December',
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec',
   ];
 
   const [year, setYear] = useState(selectedYear || currentYear);
@@ -26,11 +26,11 @@ const YearMonthPicker = ({ selectedYear, selectedMonth, onChange }: { selectedYe
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <button className="px-4 py-1 bg-blue-500 shadow-md text-white rounded-md">
+        <button className="px-4 py-1 md:text-[1rem] text-[0.8rem] bg-blue-500 shadow-md text-white rounded-md">
           {months[month]} | {year}
         </button>
       </PopoverTrigger>
-      <PopoverContent className="p-4 w-[90] z-10 bg-white shadow-md rounded-md">
+      <PopoverContent className="p-4  w-content z-10 bg-white shadow-md md:w-[35vw] w-[45vw] rounded-md">
         <div className="flex items-center justify-between mb-4">
           <button onClick={() => handleYearChange(-1)}>
             <ChevronLeftIcon className="w-5 h-5" />
@@ -44,7 +44,7 @@ const YearMonthPicker = ({ selectedYear, selectedMonth, onChange }: { selectedYe
           {months.map((monthName, index) => (
             <button
               key={index}
-              className={`p-2 w-[5vw] rounded-md text-center ${
+              className={`md:p-2 p-1 text-[0.45rem] md:text-[1rem] md:w-[10vw] w-[12vw] rounded-md text-center ${
                 index === month ? 'bg-blue-500 text-white' : 'bg-gray-100'
               }`}
               onClick={() => handleMonthSelect(index)}

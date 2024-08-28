@@ -70,6 +70,7 @@ export default function AddInvoice() {
       modt,
       modt_amount: modt ? modtAmount : null,
       total_amount: totalAmount,
+      bank_company_name: "ambit",
     };
     if (!supabase) {
       alert(
@@ -108,7 +109,7 @@ export default function AddInvoice() {
           className="w-6 h-6 cursor-pointer hover:text-blue-500 ease-linear"
           onClick={() => navigator.back()}
         />
-        <h1 className="font-semibold text-2xl">Add Invoice</h1>
+        <h1 className="font-semibold text-2xl">Add Invoice - Ambit</h1>
       </div>
       <ScrollArea className="flex flex-grow h-screen p-4">
         <form className="flex flex-col space-y-4" onSubmit={handleSubmit}>

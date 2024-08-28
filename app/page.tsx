@@ -17,7 +17,8 @@ import { useCallback, useEffect, useState } from "react";
 import * as XLSX from "xlsx";
 import * as XLSXStyle from "sheetjs-style";
 import { supabase } from "@/util/supabaseClient";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import CardList from "./components/cardList";
 
 export default function Home() {
   const [selectedDate, setSelectedDate] = useState({ year: 2024, month: 7 });
@@ -38,6 +39,14 @@ export default function Home() {
     "November",
     "December",
   ];
+  const searchParams = useSearchParams();
+  const clientName = searchParams.get("clientName");
+
+  useEffect(() => {
+    if (clientName) {
+      document.title = `${clientName} Management`;
+    }
+  }, [clientName]);
 
   interface Date {
     year: number;
@@ -99,11 +108,11 @@ export default function Home() {
     XLSX.utils.book_append_sheet(
       wb,
       ws,
-      `Ambit Report - ${months[selectedDate.month]}, ${selectedDate.year}`
+      `${clientName} Report - ${months[selectedDate.month]}, ${selectedDate.year}`
     );
     XLSXStyle.writeFile(
       wb,
-      `Ambit Report - ${months[selectedDate.month]}, ${selectedDate.year}.xlsx`
+      `${clientName} Report - ${months[selectedDate.month]}, ${selectedDate.year}.xlsx`
     );
   };
 
@@ -119,6 +128,7 @@ export default function Home() {
     const { data, error } = await supabase
       .from("invoices")
       .select("*")
+      .eq("bank_company_name", clientName?.toLowerCase())
       .gte("date", startDate.toISOString()) // Greater than or equal to the start date
       .lt("date", endDate.toISOString()) // Less than the start date of the next month
       .order("date", { ascending: true });
@@ -132,7 +142,7 @@ export default function Home() {
     setTotalAmount(
       data.reduce((acc, invoice) => acc + invoice.total_amount, 0)
     );
-  }, [selectedDate]);
+  }, [selectedDate,clientName]);
 
   useEffect(() => {
     fetchInvoices();
@@ -189,138 +199,10 @@ export default function Home() {
 
   return (
     <main className="flex max-h-screen flex-col items-center justify-between dark:bg-black p-5 md:overflow-hidden">
-      <div className="flex gap-2 justify-end w-full">
-        <YearMonthPicker
-          selectedYear={selectedDate.year}
-          selectedMonth={selectedDate.month}
-          onChange={handleDateChange}
-        />
-        <Button
-          onClick={() => {
-            navigator.push("/addInvoice");
-          }}
-        >
-          Add Invoice
-        </Button>
-        <Button
-          disabled={totalAmount > 0 ? false : true}
-          onClick={downloadExcel}
-        >
-          Ambit
-        </Button>
-      </div>
-      <div className="flex outline-1 outline rounded-md shadow-md flex-grow h-screen w-full m-5">
+      
+      <div className="flex outline-1 outline rounded-md shadow-md flex-grow h-screen w-full ">
         <ScrollArea  className="w-full  !h-[calc(100vh_-_145px)]">
-          <Table className="w-full">
-            <TableCaption>
-              Details of {months[selectedDate.month]}, {selectedDate.year}
-            </TableCaption>
-            <TableHeader className="!border-b-[3px] !z-[10] bg-black">
-              <TableRow className="text-[0.9rem] border-b-[3px] MonaSans font-[600]">
-                <TableHead className="base:min-w-[180px] text-white tv:w-[200px]">
-                  S.No #
-                </TableHead>
-                <TableHead className="base:min-w-[110px] text-white tv:w-[110px]">
-                  Date
-                </TableHead>
-                <TableHead className="base:min-w-[120px] text-white tv:w-[120px]">
-                  Name
-                </TableHead>
-                <TableHead className="base:min-w-[100px] text-white tv:w-[100px]">
-                  File / Application Number
-                </TableHead>
-                <TableHead className="base:min-w-[100px] text-white tv:w-[100px]">
-                  Opinion
-                </TableHead>
-                <TableHead className="base:min-w-[100px] text-white tv:w-[100px]">
-                  VETTING
-                </TableHead>
-                <TableHead className="base:min-w-[100px] text-white tv:w-[100px]">
-                  MODTD
-                </TableHead>
-                <TableHead className="base:min-w-[100px] text-white tv:w-[100px]">
-                  AMOUNT IN RS
-                </TableHead>
-                <TableHead className="base:min-w-[50px] text-white tv:w-[50px]"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {invoiceData.map((data: any, index) => (
-                <TableRow
-                  key={index}
-                  className="text-[0.9rem] border-b-[1px] MonaSans font-[400]"
-                >
-                  <TableCell className="base:min-w-[180px] tv:w-[200px]">
-                    {index + 1}.
-                  </TableCell>
-                  <TableCell className="base:min-w-[110px] tv:w-[110px]">
-                    {data.date}
-                  </TableCell>
-                  <TableCell className="base:min-w-[120px] tv:w-[120px]">
-                    {data.client_name}
-                  </TableCell>
-                  <TableCell className="base:min-w-[100px] tv:w-[100px]">
-                    {data.file_number}
-                  </TableCell>
-                  <TableCell className="base:min-w-[100px] tv:w-[100px]">
-                    {data.opinion ? data.opinion_amount + "/-" : "-"}
-                  </TableCell>
-                  <TableCell className="base:min-w-[100px] tv:w-[100px]">
-                    {data.vetting ? data.vetting_amount + "/-" : "-"}
-                  </TableCell>
-                  <TableCell className="base:min-w-[100px] tv:w-[100px]">
-                    {data.modt ? data.modt_amount + "/-" : "-"}
-                  </TableCell>
-                  <TableCell className="base:min-w-[100px] tv:w-[100px]">
-                    {data.total_amount + "/-"}
-                  </TableCell>
-                  <TableCell className="base:min-w-[50px] tv:w-[50px]">
-                    ...
-                  </TableCell>
-                </TableRow>
-              ))}
-              {totalAmount === 0 && (
-                <>
-                  <TableRow>
-                    <TableCell
-                      colSpan={8}
-                      className="text-center text-[1.3rem] md:text-[2rem] h-[5rem]  MonaSans font-[600]"
-                    >
-                      No invoices found for {months[selectedDate.month]},{" "}
-                      {selectedDate.year}
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell
-                      colSpan={8}
-                      className="text-center text-[1rem] h-[2rem]  MonaSans font-[400]"
-                    >
-                      Click on{" "}
-                      <span className="font-semibold">
-                        &quot;Add Invoice&quot;
-                      </span>{" "}
-                      to add new invoice
-                    </TableCell>
-                  </TableRow>
-                </>
-              )}
-            </TableBody>
-            {totalAmount > 0 && (
-              <TableFooter>
-                <TableRow>
-                  <TableCell>Total</TableCell>
-                  <TableCell></TableCell>
-                  <TableCell></TableCell>
-                  <TableCell></TableCell>
-                  <TableCell></TableCell>
-                  <TableCell></TableCell>
-                  <TableCell></TableCell>
-                  <TableCell className="text-left">₹ {totalAmount}/-</TableCell>
-                  <TableCell></TableCell>
-                </TableRow>
-              </TableFooter>
-            )}
-          </Table>
+          <CardList/>
           <ScrollBar orientation="vertical" />
           <ScrollBar orientation="horizontal" />
         </ScrollArea>

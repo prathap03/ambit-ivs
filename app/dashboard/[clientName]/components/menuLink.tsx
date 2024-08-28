@@ -17,7 +17,7 @@ const MenuLink = ({ item, setSheetOpen }: { item: any; setSheetOpen: any }) => {
   return (
     <>
       <Link
-        href={`/home/${item.name}`}
+        href={item.name!="home" ? `/${item.name}/Ambit` : "/"}
         onClick={(e) => setSheetOpen(false)}
         style={
           pathname
@@ -35,7 +35,7 @@ const MenuLink = ({ item, setSheetOpen }: { item: any; setSheetOpen: any }) => {
       </Link>
 
       <Link
-        href={`/home/${item.name}`}
+          href={item.name!="home" ? `/${item.name}/Ambit` : "/"}
         onClick={(e) => setSheetOpen(false)}
         style={
           pathname

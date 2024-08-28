@@ -3,7 +3,7 @@ import { FiUsers } from "react-icons/fi";
 import { GoTasklist } from "react-icons/go";
 import { IoBriefcaseOutline } from "react-icons/io5";
 import { LiaFileInvoiceDollarSolid } from "react-icons/lia";
-import { LuHome } from "react-icons/lu";
+import { LuHome, LuLayoutDashboard } from "react-icons/lu";
 import { SlCalender } from "react-icons/sl";
 import { LuFileCheck2 } from "react-icons/lu";
 import { TbReportAnalytics } from "react-icons/tb";
@@ -15,8 +15,10 @@ import { MdDrafts, MdOutlineStackedLineChart, MdMail, MdNotifications } from "re
 export const getIconComponent = (icon: string) => {
   const size = 15;
   switch (icon) {
-    case "dashboard":
+    case "home":
       return <LuHome size={size} />;
+    case "dashboard":
+      return <LuLayoutDashboard size={size} />;
     case "cases":
       return <IoBriefcaseOutline size={size} />;
     case "calendar":

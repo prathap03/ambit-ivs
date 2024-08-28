@@ -7,6 +7,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
 // import { LogOut, SquareUser } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -16,11 +17,13 @@ import FeatureLink from "./featureLink";
 import features from "../utils/features";
 import NavItems from "../utils/navItems";
 import MenuLink from "./menuLink";
+import { useAuth } from "@/context/AuthContext";
 
 const  Navbar = () => {
   const [pathname, setpathname] = useState("");
   const [sheetOpen, setSheetOpen] = useState<boolean>(false);
   const router = useRouter();
+  const {logout} = useAuth()
 
 //   const [userEmail, setuserEmail] = useState<any>("");
   const [userProfile, setUserProfile] = useState<any>("");
@@ -74,13 +77,17 @@ const  Navbar = () => {
         </div>
         {/* #edeef2 (new) ---------------- #eeefff (old) */}
         <div className="w-full navbarscrollOfHome h-[calc(100vh_-_157px)] pl-[13px] pr-[13px] flex flex-col mt-[4px] pt-[8px] gap-1 text-[#46494F] pb-[20px]">
+
           {NavItems.map((navitem:any, idx:number) => (
             <MenuLink key={idx} setSheetOpen={setSheetOpen} item={navitem} />
           ))}
-          {features.map((feature, idx: number) => (
+          {/* {features.map((feature, idx: number) => (
             <FeatureLink key={idx} setSheetOpen={setSheetOpen} item={feature} />
-          ))}
+          ))} */}
         </div>
+        <div className="flex flex-grow p-2 items-end h-full">
+           <Button className="w-full hover:bg-red-500" onClick={logout}>Logout</Button>
+           </div>
         {/* <div className="absolute  bottom-[-1vh] flex justify-center items-center border-t-[1px] w-full px-[16px] py-[10px] bg-[#fbfbfb] z-[10]">
           <DropdownMenu open={ProfileActive} onOpenChange={setProfileActive}>
             <DropdownMenuTrigger asChild>
@@ -113,13 +120,17 @@ const  Navbar = () => {
             </DropdownMenuContent>
           </DropdownMenu>
         </div> */}
+        
       </div>
 
-      <div className="base:flex bl:hidden w-full py-[10px] h-[4rem] border-b-[2px]  flex justify-between items-center">
+      <div className="base:flex bl:hidden w-full py-[10px] h-[4rem] border-b-[2px]  flex justify-between  items-center">
         <div className="px-[20px] py-[5px] flex justify-center items-center">
+          
           <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
             <SheetTrigger asChild onClick={(e: any) => setSheetOpen(true)}>
-              {/* <RiMenu2Line size={20} color="#6c7290" /> */}
+            
+              <RiMenu2Line size={20} color="#6c7290" />
+              
             </SheetTrigger>
             <SheetContent
               side={"left"}
@@ -149,6 +160,7 @@ const  Navbar = () => {
             </SheetContent>
           </Sheet>
         </div>
+          <Button className="mr-2 hover:bg-red-500" onClick={logout}>Logout</Button>
       </div>
     </>
   );

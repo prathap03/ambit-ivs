@@ -17,8 +17,8 @@ import features from "../utils/features";
 import NavItems from "../utils/navItems";
 import MenuLink from "./menuLink";
 
-const Navbar = () => {
-  const [pathname, setpathname] = useState(usePathname());
+const  Navbar = () => {
+  const [pathname, setpathname] = useState("");
   const [sheetOpen, setSheetOpen] = useState<boolean>(false);
   const router = useRouter();
 
@@ -119,7 +119,7 @@ const Navbar = () => {
         <div className="px-[20px] py-[5px] flex justify-center items-center">
           <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
             <SheetTrigger asChild onClick={(e: any) => setSheetOpen(true)}>
-              <RiMenu2Line size={20} color="#6c7290" />
+              {/* <RiMenu2Line size={20} color="#6c7290" /> */}
             </SheetTrigger>
             <SheetContent
               side={"left"}

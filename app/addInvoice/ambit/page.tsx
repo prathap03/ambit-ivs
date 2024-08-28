@@ -23,7 +23,6 @@ export default function AddInvoice() {
     ((modt && Number(modtAmount)) || 0);
 
   const handleDateChange = (date: any) => {
-    const value = date;
     const formattedDate = date; // Format date to ISO 8601
     setDate(formattedDate);
   };

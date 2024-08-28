@@ -125,7 +125,9 @@ const Navbar = () => {
         <div className="px-[20px] py-[5px] flex justify-center items-center">
           <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
             <SheetTrigger asChild onClick={(e: any) => setSheetOpen(true)}>
+            
               <RiMenu2Line size={20} color="#6c7290" />
+              
             </SheetTrigger>
             <SheetContent
               side={"left"}

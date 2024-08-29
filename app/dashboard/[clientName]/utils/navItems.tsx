@@ -14,10 +14,10 @@ const data = [
     name: "home",
     icon: LuHome,
   },
-  {
-    name: "dashboard",
-    icon: LuHome,
-  },
+  // {
+  //   name: "dashboard",
+  //   icon: LuHome,
+  // },
   // Hide until further planning
   // {
   //   name:"notifications",

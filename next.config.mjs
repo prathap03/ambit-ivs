@@ -10,6 +10,7 @@ const nextConfig = {
       "www.vgc.in",
       "www.cloudinary.com",
       "www.ambit.co",
+      "jbpsuzetzbeckcvyaody.supabase.co"
     ],
   },
 };

@@ -1,22 +1,26 @@
 "use client";
 
-import { useState } from "react";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { use, useEffect, useState } from "react";
+
 import { ArrowLeftIcon } from "@radix-ui/react-icons";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/util/supabaseClient";
+import { ScrollArea } from "@radix-ui/react-scroll-area";
 
-export default function AddInvoice() {
+export default function AddInvoice({ params }: { params: { clientId: string } }) {
   const [clientName, setClientName] = useState("");
   const [date, setDate] = useState("");
   const [fileNumber, setFileNumber] = useState("");
   const [opinion, setOpinion] = useState(false);
   const [vetting, setVetting] = useState(false);
   const [modt, setModt] = useState(false);
-  const [opinionAmount, setOpinionAmount] = useState("2000");
-  const [vettingAmount, setVettingAmount] = useState("500");
-  const [modtAmount, setModtAmount] = useState("750");
+  const [opinionAmount, setOpinionAmount] = useState("0");
+  const [vettingAmount, setVettingAmount] = useState("0");
+  const [modtAmount, setModtAmount] = useState("0");
+  const [bankDetail, setBankDetail] = useState<any>(null);
   const navigator = useRouter();
+  const [loading, setLoading] = useState(true);
+  const clientId = params.clientId;
   const totalAmount =
     ((opinion && Number(opinionAmount)) || 0) +
     ((vetting && Number(vettingAmount)) || 0) +
@@ -69,7 +73,7 @@ export default function AddInvoice() {
       modt,
       modt_amount: modt ? modtAmount : null,
       total_amount: totalAmount,
-      bank_company_name: "ambit",
+      bank_company_name: bankDetail.bank_name,
     };
     if (!supabase) {
       alert(
@@ -94,25 +98,67 @@ export default function AddInvoice() {
     setOpinion(false);
     setVetting(false);
     setModt(false);
-    setOpinionAmount("2000");
-    setVettingAmount("750");
-    setModtAmount("500");
+    setOpinionAmount(bankDetail.bank_opinion_amount);
+    setVettingAmount(bankDetail.bank_vetting_amount);
+    setModtAmount(bankDetail.bank_modt_amount);
 
     alert("Invoice added successfully!");
   };
 
+  const fetchBankDetails = async()=>{
+    if (!supabase) return;
+    
+    const {data,error} = await supabase.from("banks").select("*").eq("id",clientId);
+    if(error){
+      console.error(error);
+      setLoading(false);
+      return;
+    }
+    
+    if(data){
+      document.title = `${data[0].bank_name} Management`;
+      setBankDetail(data[0]);
+      
+      setOpinionAmount(data[0].bank_opinion_amount);
+      setVettingAmount(data[0].bank_vetting_amount);
+      setModtAmount(data[0].bank_modt_amount);
+      setLoading(false);
+      return data[0];  
+    }
+    
+  }
+
+  useEffect(() => {
+    fetchBankDetails();
+  },[])
+
+  if(loading){
+    return (
+      <div className="min-h-screen flex flex-col bg-white border shadow-sm rounded-xl dark:bg-neutral-800 dark:border-neutral-700 dark:shadow-neutral-700/70">
+  <div className="flex flex-auto flex-col justify-center items-center p-4 md:p-5">
+    <div className="flex justify-center">
+      <div className="animate-spin inline-block size-6 border-[3px] border-current border-t-transparent text-black rounded-full dark:text-blue-500" role="status" aria-label="loading">
+        <span className="sr-only">Loading...</span>
+      </div>
+    </div>
+  </div>
+</div>
+    )
+  }
+
+
   return (
-    <div className="flex flex-grow flex-col max-h-screen min-h-screen overflow-hidden">
-      <div className="p-2 flex items-center gap-2 bg-black text-white h-max w-[100%]">
+    <div className="flex flex-grow  flex-col max-h-screen min-h-screen overflow-hidden">
+{  bankDetail ?    (<><div className="p-2 flex items-center gap-2 bg-black text-white h-max  w-[100%]">
         <ArrowLeftIcon
           className="w-6 h-6 cursor-pointer hover:text-blue-500 ease-linear"
           onClick={() => navigator.back()}
         />
-        <h1 className="font-semibold text-2xl">Add Invoice - Ambit</h1>
+        <h1 className="font-semibold text-2xl">Add Invoice - {bankDetail.bank_name}</h1>
       </div>
-      <ScrollArea className="flex flex-grow h-screen p-4">
-        <form className="flex flex-col space-y-4" onSubmit={handleSubmit}>
-          <div>
+      <ScrollArea className="flex w-full flex-grow h-screen p-4">
+        <form className="flex flex-col w-full space-y-4" onSubmit={handleSubmit}>
+          <div className="opacity-0 animate-fade-in delay-[${1 * 100}ms]">
             <label className="block text-sm font-medium text-gray-700">
               Client Name
             </label>
@@ -125,7 +171,7 @@ export default function AddInvoice() {
             />
           </div>
 
-          <div>
+          <div className="opacity-0 animate-fade-in delay-[${2 * 100}ms]">
             <label className="block text-sm font-medium text-gray-700">
               Date
             </label>
@@ -137,7 +183,7 @@ export default function AddInvoice() {
             />
           </div>
 
-          <div>
+          <div className="opacity-0 animate-fade-in delay-[${3 * 100}ms]">
             <label className="block text-sm font-medium text-gray-700">
               File/Application Number
             </label>
@@ -158,14 +204,14 @@ export default function AddInvoice() {
           <div className="flex space-x-4">
             <button
               type="button"
-              className={`px-4 py-2 rounded-md shadow-sm font-semibold ${
+              className={`px-4 py-2 opacity-0 animate-fade-in delay-[${4 * 100}ms] rounded-md shadow-sm font-semibold ${
                 opinion
                   ? "bg-green-600 text-white"
                   : "bg-gray-200 text-gray-700"
               }`}
               onClick={() => {
                 setOpinion(!opinion);
-                opinion ? setOpinionAmount("") : setOpinionAmount("2000");
+                opinion ? setOpinionAmount("") : setOpinionAmount(bankDetail.bank_opinion_amount);
               }}
             >
               Opinion
@@ -173,26 +219,26 @@ export default function AddInvoice() {
 
             <button
               type="button"
-              className={`px-4 py-2 rounded-md shadow-sm font-semibold ${
+              className={`px-4 py-2 rounded-md opacity-0 animate-fade-in delay-[${5 * 100}ms] shadow-sm font-semibold ${
                 vetting
                   ? "bg-green-600 text-white"
                   : "bg-gray-200 text-gray-700"
               }`}
               onClick={() => {
                 setVetting(!vetting);
-                vetting ? setVettingAmount("") : setVettingAmount("500");
+                vetting ? setVettingAmount("") : setVettingAmount(bankDetail.bank_vetting_amount);
               }}
             >
               Vetting
             </button>
             <button
               type="button"
-              className={`px-4 py-2 rounded-md shadow-sm font-semibold ${
+              className={`px-4 py-2 rounded-md opacity-0 animate-fade-in delay-[${6 * 100}ms] shadow-sm font-semibold ${
                 modt ? "bg-green-600 text-white" : "bg-gray-200 text-gray-700"
               }`}
               onClick={() => {
                 setModt(!modt);
-                modt ? setModtAmount("") : setModtAmount("750");
+                modt ? setModtAmount("") : setModtAmount(bankDetail.bank_modt_amount);
               }}
             >
               MODT
@@ -200,7 +246,7 @@ export default function AddInvoice() {
           </div>
 
           {opinion && (
-            <div>
+            <div className="opacity-0 animate-fade-in delay-[${2 * 100}ms]">
               <label className="block text-sm font-medium text-gray-700">
                 Opinion Amount
               </label>
@@ -225,7 +271,7 @@ export default function AddInvoice() {
           )}
 
           {vetting && (
-            <div>
+            <div className="opacity-0 animate-fade-in delay-[${2 * 100}ms]">
               <label className="block text-sm font-medium text-gray-700">
                 Vetting Amount
               </label>
@@ -250,7 +296,7 @@ export default function AddInvoice() {
           )}
 
           {modt && (
-            <div>
+            <div className="opacity-0 animate-fade-in delay-[${2 * 100}ms]">
               <label className="block text-sm font-medium text-gray-700">
                 MODT Amount
               </label>
@@ -274,18 +320,19 @@ export default function AddInvoice() {
             </div>
           )}
 
-          <div className="text-lg bg-black text-white p-2 rounded-md shadow-md font-semibold">
+          <div className="text-lg opacity-0 animate-fade-in delay-[${8 * 100}ms] bg-black text-white p-2 rounded-md shadow-md font-semibold">
             Total Amount: {totalAmount} /-
           </div>
 
           <button
             type="submit"
-            className="self-end px-4 py-2 bg-indigo-600 text-white font-semibold rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            className="self-end px-4 py-2 opacity-0 animate-fade-in delay-[${9 * 100}ms] bg-indigo-600 text-white font-semibold rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
           >
             Submit
           </button>
         </form>
       </ScrollArea>
+      </>) : <div className="flex items-center justify-center h-full w-full">Loading...</div>}
     </div>
   );
 }

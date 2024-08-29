@@ -39,6 +39,7 @@ export default function AmbitHome({ params }: { params: { clientName: string } }
     "December",
   ];
   const clientName = "Overall";
+  const [loading, setLoading] = useState(true);
 
 
 
@@ -136,10 +137,12 @@ export default function AmbitHome({ params }: { params: { clientName: string } }
 
     if (error) {
       console.error(error);
+      setLoading(false);
       return;
     }
 
     setInvoiceData(data);
+    setLoading(false);
     setTotalAmount(
       data.reduce((acc, invoice) => acc + invoice.total_amount, 0)
     );
@@ -185,6 +188,7 @@ export default function AmbitHome({ params }: { params: { clientName: string } }
       )
       .subscribe();
 
+  
     return () => {
       // Cleaning up the subscription
       if (supabase) {
@@ -192,6 +196,21 @@ export default function AmbitHome({ params }: { params: { clientName: string } }
       }
     };
   }, [selectedDate, fetchInvoices]);
+
+  if(loading){
+    return (
+      <div className="min-h-screen flex flex-col bg-white border shadow-sm rounded-xl dark:bg-neutral-800 dark:border-neutral-700 dark:shadow-neutral-700/70">
+  <div className="flex flex-auto flex-col justify-center items-center p-4 md:p-5">
+    <div className="flex justify-center">
+      <div className="animate-spin inline-block size-6 border-[3px] border-current border-t-transparent text-black rounded-full dark:text-blue-500" role="status" aria-label="loading">
+        <span className="sr-only">Loading...</span>
+      </div>
+    </div>
+  </div>
+</div>
+    )
+  }
+
 
   const handleDateChange = (date: Date): void => {
     setSelectedDate(date);
@@ -210,13 +229,13 @@ export default function AmbitHome({ params }: { params: { clientName: string } }
           selectedMonth={selectedDate.month}
           onChange={handleDateChange}
         />
-        <Button
+        {/* <Button
           onClick={() => {
             navigator.push("/addInvoice/"+clientName?.toLowerCase());
           }}
         >
           Add Invoice
-        </Button>
+        </Button> */}
         <Button
           disabled={totalAmount > 0 ? false : true}
           onClick={downloadExcel}
@@ -228,7 +247,7 @@ export default function AmbitHome({ params }: { params: { clientName: string } }
       <div className="flex outline-1 outline rounded-md shadow-md flex-grow h-screen w-full m-5">
         <ScrollArea  className="w-full  !h-[calc(100vh_-_145px)]">
           <Table className="w-full">
-            <TableCaption>
+            <TableCaption className="style={{ animationDelay: `${index * 0.1}s` }}">
               Details of {months[selectedDate.month]}, {selectedDate.year}
             </TableCaption>
             <TableHeader className="!border-b-[3px] !z-[10] bg-black">
@@ -268,7 +287,8 @@ export default function AmbitHome({ params }: { params: { clientName: string } }
               {invoiceData.map((data: any, index) => (
                 <TableRow
                   key={index}
-                  className="text-[0.9rem] border-b-[1px] MonaSans font-[400]"
+                  className="text-[0.9rem] opacity-0 animate-fade-in delay-[${index * 100}ms] border-b-[1px] MonaSans font-[400]"
+                  style={{ animationDelay: `${index * 0.1}s` }}
                 >
                   <TableCell className="base:min-w-[180px] tv:w-[200px]">
                     {index + 1}.
@@ -304,7 +324,7 @@ export default function AmbitHome({ params }: { params: { clientName: string } }
               ))}
               {totalAmount === 0 && (
                 <>
-                  <TableRow>
+                  <TableRow className="opacity-0 animate-fade-in delay-[${index * 100}ms]">
                     <TableCell
                       colSpan={8}
                       className="text-center text-[1.3rem] md:text-[2rem] h-[5rem]  MonaSans font-[600]"
@@ -313,7 +333,7 @@ export default function AmbitHome({ params }: { params: { clientName: string } }
                       {selectedDate.year}
                     </TableCell>
                   </TableRow>
-                  <TableRow>
+                  <TableRow className="opacity-0 animate-fade-in delay-[${index * 100}ms]">
                     <TableCell
                       colSpan={8}
                       className="text-center text-[1rem] h-[2rem]  MonaSans font-[400]"
@@ -329,9 +349,10 @@ export default function AmbitHome({ params }: { params: { clientName: string } }
               )}
             </TableBody>
             {totalAmount > 0 && (
-              <TableFooter>
+              <TableFooter className="opacity-0 animate-fade-in delay-[${index * 100}ms]">
                 <TableRow>
                   <TableCell>Total</TableCell>
+                  <TableCell></TableCell>
                   <TableCell></TableCell>
                   <TableCell></TableCell>
                   <TableCell></TableCell>

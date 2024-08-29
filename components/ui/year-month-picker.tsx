@@ -26,7 +26,7 @@ const YearMonthPicker = ({ selectedYear, selectedMonth, onChange }: { selectedYe
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <button className="px-4 py-1 md:text-[1rem] text-[0.8rem] bg-blue-500 shadow-md text-white rounded-md">
+        <button className="px-4 py-[0.35rem] md:text-[1rem] text-[1rem] bg-blue-500 shadow-md text-white rounded-md">
           {months[month]} | {year}
         </button>
       </PopoverTrigger>

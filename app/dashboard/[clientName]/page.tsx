@@ -271,9 +271,9 @@ export default function AmbitHome({ params }: { params: { clientName: string } }
        <div className="flex justify-between   w-full">
          
          <div>
-         <h1 className="hidden md:block font-semibold text-[1.5rem]">Invoice Dashboard - {bankDetail && bankDetail.bank_name}</h1>
+         <h1 className="hidden md:flex  w-full  font-semibold text-[1.5rem]">Invoice Dashboard - {bankDetail && bankDetail.bank_name}</h1>
          </div>
-         <div className="flex gap-2">
+         <div className="flex justify-between md:justify-normal items-center  w-full md:w-auto gap-2">
          <YearMonthPicker
            selectedYear={selectedDate.year}
            selectedMonth={selectedDate.month}
@@ -299,7 +299,7 @@ export default function AmbitHome({ params }: { params: { clientName: string } }
           )
             }
          >
-           Generate Report
+           Generate 
          </Button>
          </div>
        </div>

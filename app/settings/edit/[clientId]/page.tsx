@@ -6,6 +6,7 @@ import { supabase } from "@/util/supabaseClient";
 import { ScrollArea } from "@radix-ui/react-scroll-area";
 import { useDropzone } from "react-dropzone";
 import { ArrowLeftIcon } from "@radix-ui/react-icons";
+import { ScrollBar } from "@/components/ui/scroll-area";
 
 export default function AddInvoice({
   params,
@@ -197,7 +198,7 @@ export default function AddInvoice({
   }
 
   return (
-    <div className="flex flex-grow flex-col max-h-screen min-h-screen overflow-hidden">
+    <div className="flex flex-grow flex-col h-screen min-h-screen overflow-hidden">
       {bankDetail ? (
         <>
           <div className="p-2 flex items-center gap-2 bg-black text-white h-max w-[100%]">
@@ -209,9 +210,9 @@ export default function AddInvoice({
               Edit Bank - {bankDetail.bank_name}
             </h1>
           </div>
-          <ScrollArea className="flex w-full flex-grow h-screen p-4">
+          <ScrollArea className="flex w-full  overflow-x-auto  flex-grow p-4">
             <form
-              className="flex flex-col w-full space-y-4"
+              className="flex flex-col w-full  space-y-4"
               onSubmit={handleSubmit}
             >
               <div className="opacity-0 animate-fade-in delay-[${1 * 100}ms]">
@@ -316,15 +317,17 @@ export default function AddInvoice({
                 />
               </div>
 
-              <div className="flex justify-end">
+              <div className="flex   justify-end">
                 <button
                   type="submit"
-                  className="opacity-0 animate-fade-in delay-[${5 * 100}ms] inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                  className="opacity-0 mb-[5rem] md:mb-2 animate-fade-in delay-[${5 * 100}ms] inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                 >
                   Submit
                 </button>
               </div>
             </form>
+            <ScrollBar orientation="vertical" />
+           <ScrollBar orientation="horizontal" />
           </ScrollArea>
         </>
       ) : (

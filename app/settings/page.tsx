@@ -11,6 +11,7 @@ import { useAuth } from "@/context/AuthContext";
 import { Separator } from "@radix-ui/react-dropdown-menu";
 import { Button } from "@/components/ui/button";
 import CardList from "./components/cardList";
+import { FiPlus } from "react-icons/fi";
 
 export default function Home() {
   const navigator = useRouter();
@@ -119,7 +120,10 @@ export default function Home() {
           
           <div className="font-semibold p-2 flex justify-between items-center text-xl">
             <h1>Banks and Clients</h1>
-            <Button>Add Bank</Button>
+            <Button onClick={()=>{
+              setLoading(true)
+              navigator.push("settings/addClient")
+            }} className="hover:bg-green-500"> Add  <FiPlus color="white" className="font-semibold text-white ml-2"/></Button>
           </div>
           <Separator />
           <CardList banks={banks} />

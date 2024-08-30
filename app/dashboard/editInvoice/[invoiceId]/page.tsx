@@ -1,13 +1,14 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { ArrowLeftIcon } from "@radix-ui/react-icons";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/util/supabaseClient";
 import { ScrollArea } from "@radix-ui/react-scroll-area";
+import { ScrollBar } from "@/components/ui/scroll-area";
 
-export default function AddInvoice({ params }: { params: { clientId: string } }) {
+export default function AddInvoice({ params }: { params: { invoiceId: string } }) {
   const [clientName, setClientName] = useState("");
   const [date, setDate] = useState("");
   const [fileNumber, setFileNumber] = useState("");
@@ -20,7 +21,7 @@ export default function AddInvoice({ params }: { params: { clientId: string } })
   const [bankDetail, setBankDetail] = useState<any>(null);
   const navigator = useRouter();
   const [loading, setLoading] = useState(true);
-  const clientId = params.clientId;
+  const invoiceId = params.invoiceId;
   const totalAmount =
     ((opinion && Number(opinionAmount)) || 0) +
     ((vetting && Number(vettingAmount)) || 0) +
@@ -33,7 +34,7 @@ export default function AddInvoice({ params }: { params: { clientId: string } })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+    setLoading(true)
     // Validate inputs
     if (!clientName || !date || !fileNumber) {
       alert("Please fill in all required fields.");
@@ -83,15 +84,16 @@ export default function AddInvoice({ params }: { params: { clientId: string } })
     }
 
     // Save invoice to Supabase
-    const { data, error } = await supabase.from("invoices").insert([invoice]);
+    const { data, error } = await supabase.from("invoices").update(invoice).eq("id",invoiceId)
 
     if (error) {
       console.error("Error inserting invoice:", error);
-      alert("There was an error adding the invoice. Please try again.");
+      alert("There was an error updating the invoice. Please try again.");
       return;
     }
 
     // Clear form fields
+    navigator.back()
     setClientName("");
     setDate("");
     setFileNumber("");
@@ -102,26 +104,32 @@ export default function AddInvoice({ params }: { params: { clientId: string } })
     setVettingAmount(bankDetail.bank_vetting_amount);
     setModtAmount(bankDetail.bank_modt_amount);
 
-    alert("Invoice added successfully!");
+    alert("Invoice updated successfully!");
   };
 
-  const fetchBankDetails = async()=>{
+  const fetchInvoiceDetails = async()=>{
     if (!supabase) return;
     
-    const {data,error} = await supabase.from("banks").select("*").eq("id",clientId);
+    const {data,error} = await supabase.from("invoices").select("*").eq("id",invoiceId);
     if(error){
       console.error(error);
       setLoading(false);
+      navigator.back()
       return;
     }
     
     if(data){
       document.title = `${data[0].bank_name} Management`;
       setBankDetail(data[0]);
-      
-      setOpinionAmount(data[0].bank_opinion_amount);
-      setVettingAmount(data[0].bank_vetting_amount);
-      setModtAmount(data[0].bank_modt_amount);
+      setClientName(data[0].client_name)
+      handleDateChange(data[0].date)
+      setFileNumber(data[0].file_number)
+      setOpinion(data[0].opinion)
+      setOpinionAmount(data[0].opinion_amount || 0);
+      setVetting(data[0].vetting)
+      setVettingAmount(data[0].vetting_amount || 0);
+      setModt(data[0].modt)
+      setModtAmount(data[0].modt_amount);
       setLoading(false);
       return data[0];  
     }
@@ -129,7 +137,7 @@ export default function AddInvoice({ params }: { params: { clientId: string } })
   }
 
   useEffect(() => {
-    fetchBankDetails();
+    fetchInvoiceDetails();
   },[])
 
   if(loading){
@@ -154,9 +162,9 @@ export default function AddInvoice({ params }: { params: { clientId: string } })
           className="w-6 h-6 cursor-pointer hover:text-blue-500 ease-linear"
           onClick={() => navigator.back()}
         />
-        <h1 className="font-semibold text-2xl">Add Invoice - {bankDetail.bank_name}</h1>
+        <h1 className="font-semibold text-2xl">Edit Invoice - {bankDetail.client_name} ({bankDetail.bank_company_name})</h1>
       </div>
-      <ScrollArea className="flex w-full flex-grow overflow-x-scroll p-4">
+      <ScrollArea className="flex w-full  overflow-x-auto  flex-grow p-4">
         <form className="flex flex-col w-full space-y-4" onSubmit={handleSubmit}>
           <div className="opacity-0 animate-fade-in delay-[${1 * 100}ms]">
             <label className="block text-sm font-medium text-gray-700">
@@ -209,7 +217,7 @@ export default function AddInvoice({ params }: { params: { clientId: string } })
               }`}
               onClick={() => {
                 setOpinion(!opinion);
-                opinion ? setOpinionAmount("") : setOpinionAmount(bankDetail.bank_opinion_amount);
+                opinion ? setOpinionAmount("") : setOpinionAmount(bankDetail.opinion_amount);
               }}
             >
               Opinion
@@ -224,7 +232,7 @@ export default function AddInvoice({ params }: { params: { clientId: string } })
               }`}
               onClick={() => {
                 setVetting(!vetting);
-                vetting ? setVettingAmount("") : setVettingAmount(bankDetail.bank_vetting_amount);
+                vetting ? setVettingAmount("") : setVettingAmount(bankDetail.vetting_amount);
               }}
             >
               Vetting
@@ -236,7 +244,7 @@ export default function AddInvoice({ params }: { params: { clientId: string } })
               }`}
               onClick={() => {
                 setModt(!modt);
-                modt ? setModtAmount("") : setModtAmount(bankDetail.bank_modt_amount);
+                modt ? setModtAmount("") : setModtAmount(bankDetail.modt_amount);
               }}
             >
               MODT
@@ -331,6 +339,8 @@ export default function AddInvoice({ params }: { params: { clientId: string } })
           </button>
           </div>
         </form>
+        <ScrollBar orientation="vertical" />
+        <ScrollBar orientation="horizontal" />
       </ScrollArea>
       </>) : <div className="flex items-center justify-center h-full w-full">Loading...</div>}
     </div>

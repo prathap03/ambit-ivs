@@ -1,6 +1,7 @@
 // app/home/_layout.tsx
 import React, { Suspense } from "react";
-import Navbar from "./components/navbar";
+import Navbar from "./[clientName]/components/navbar";
+
 // import Navbar from "@/components/homeComponent/navbar";
 
 

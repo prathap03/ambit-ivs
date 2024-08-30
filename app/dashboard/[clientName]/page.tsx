@@ -20,12 +20,25 @@ import * as XLSX from "xlsx";
 import * as XLSXStyle from "sheetjs-style";
 import { supabase } from "@/util/supabaseClient";
 import { useRouter } from "next/navigation";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { FiExternalLink, FiMoreHorizontal, FiTrash2 } from "react-icons/fi";
+import { BiBlock, BiPencil } from "react-icons/bi";
+import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 export default function AmbitHome({ params }: { params: { clientName: string } }) {
   const [selectedDate, setSelectedDate] = useState({ year: 2024, month: 7 });
   const [invoiceData, setInvoiceData] = useState<any[]>([]);
   const [totalAmount, setTotalAmount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [deleteAlert, setDeleteAlert] = useState<boolean>(false);
   const navigator = useRouter();
   const months = [
     "January",
@@ -52,6 +65,47 @@ export default function AmbitHome({ params }: { params: { clientName: string } }
     year: number;
     month: number;
   }
+
+  const deleteFunction = async (id:string) => {
+    if(!supabase){
+      return;
+    }
+    try{
+        const {data,error} = await supabase.from("invoices")
+        .delete()
+        .eq("id",id);
+
+        if(data){
+          toast.success("Invoice Removed")
+        }
+        if(error){
+          toast.error(error.message, {
+            position: "top-right",
+            autoClose: 5000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: "colored",
+          });
+        }
+
+      } catch(error:any) {
+        toast.error(error.message, {
+          position: "top-right",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "colored",
+        });
+      }
+      setDeleteAlert(false);
+    };
+
 
   const downloadExcel = () => {
     const wsData = invoiceData.map((data: any, index: number) => ({
@@ -108,11 +162,11 @@ export default function AmbitHome({ params }: { params: { clientName: string } }
     XLSX.utils.book_append_sheet(
       wb,
       ws,
-      `${bankDetail.bank_name} Report - ${months[selectedDate.month]}, ${selectedDate.year}`
+      `${bankDetail.bank_code.toUpperCase()} Report - ${months[selectedDate.month]}, ${selectedDate.year}`
     );
     XLSXStyle.writeFile(
       wb,
-      `${bankDetail.bank_name} Report - ${months[selectedDate.month]}, ${selectedDate.year}.xlsx`
+      `${bankDetail.bank_code.toUpperCase()} Report - ${months[selectedDate.month]}, ${selectedDate.year}.xlsx`
     );
     return new Promise(resolve => setTimeout(resolve, 1000));;
   };
@@ -345,6 +399,35 @@ export default function AmbitHome({ params }: { params: { clientName: string } }
                    className="text-[0.9rem] opacity-0 animate-fade-in delay-[${index * 100}ms] border-b-[1px] MonaSans font-[400]"
                    style={{ animationDelay: `${index * 0.1}s` }}
                  >
+                     <AlertDialog
+        open={deleteAlert}
+        onOpenChange={() => setDeleteAlert(false)}
+      >
+        <AlertDialogContent className="base:w-[90vw] tv:w-[400px] base:rounded-[10px] pb-[28px] !pt-[23px]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Confirm to delete the Invoice data
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this Invoice Data?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="base:flex-row tv:flex-row base:justify-end base:gap-[10px]">
+            <button
+              className="border-[2px] hover:bg-[#ededed] tracking-wide text-[0.8rem] font-[450] px-[10px] py-[2px] rounded-[4px]"
+              onClick={() => setDeleteAlert(false)}
+            >
+              Cancel
+            </button>
+            <button
+              className={"bg-white text-[#e5484d] hover:text-white hover:bg-[#e5484d] text-[0.8rem] tracking-wide font-[450] px-[10px] py-[2px] flex justify-center items-center gap-1 rounded-[4px] border-[#e5484d] border"}
+              onClick={()=>deleteFunction(data.id)}
+            >
+              Delete
+            </button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
                    <TableCell className="base:min-w-[180px] tv:w-[200px]">
                      {index + 1}.
                    </TableCell>
@@ -370,7 +453,43 @@ export default function AmbitHome({ params }: { params: { clientName: string } }
                      {data.total_amount + "/-"}
                    </TableCell>
                    <TableCell className="base:min-w-[50px] tv:w-[50px]">
-                     ...
+                   <DropdownMenu>
+          <DropdownMenuTrigger
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
+          >
+            <FiMoreHorizontal size={20} className="cursor-pointer" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-[200px] px-[10px] py-[10px] ">
+            <DropdownMenuGroup>
+              <DropdownMenuItem
+                onClick={() => {
+                 navigator.push("/dashboard/editInvoice/"+data.id)
+                }}
+                className="flex items-center gap-[20px] text-[0.9rem] py-[8px] px-[10px]"
+              >
+                <BiPencil size={20} color="#344054" />
+                Edit Invoice
+              </DropdownMenuItem>
+
+        
+
+
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  setDeleteAlert(true);
+                }}
+                className="flex items-center text-red-500 hover:text-red hover:bg-red-400 gap-[20px] text-[0.9rem] py-[8px] px-[10px]"
+              >
+                <FiTrash2 size={20} color="red" />
+                Delete Invoice
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
                    </TableCell>
                  </TableRow>
                ))}

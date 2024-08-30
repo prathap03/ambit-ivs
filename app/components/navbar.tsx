@@ -71,7 +71,7 @@ const Navbar = () => {
 
   return (
     // text-[#46494F]
- pathname && (pathname === '/' || pathname==="/invoices" || pathname==="/settings") && (
+ pathname && (pathname === '/' || pathname==="/invoices" || pathname.includes("/settings")) && (
      <>
       <div className="base:hidden bl:flex flex-col relative w-[min(18%,280px)] h-[95%] bg-transparent  text-[#72727b]">
         <div

@@ -34,7 +34,8 @@ import { BiBlock, BiPencil } from "react-icons/bi";
 import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 export default function AmbitHome({ params }: { params: { clientName: string } }) {
-  const [selectedDate, setSelectedDate] = useState({ year: 2024, month: 7 });
+  let currDate = new Date();
+  const [selectedDate, setSelectedDate] = useState({ year: currDate.getFullYear() , month: currDate.getMonth() });
   const [invoiceData, setInvoiceData] = useState<any[]>([]);
   const [totalAmount, setTotalAmount] = useState(0);
   const [loading, setLoading] = useState(true);

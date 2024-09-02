@@ -26,7 +26,8 @@ import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFoo
 import { toast, ToastContainer } from "react-toastify";
 
 export default function AmbitHome({ params }: { params: { clientName: string } }) {
-  const [selectedDate, setSelectedDate] = useState({ year: 2024, month: 7 });
+  let currDate = new Date();
+  const [selectedDate, setSelectedDate] = useState({ year: currDate.getFullYear() , month: currDate.getMonth() });
   const [invoiceData, setInvoiceData] = useState<any[]>([]);
   const [totalAmount, setTotalAmount] = useState(0);
   const navigator = useRouter();
@@ -89,6 +90,7 @@ export default function AmbitHome({ params }: { params: { clientName: string } }
     };
 
   useEffect(() => {
+ 
     if (clientName) {
       document.title = `${clientName} Management`;
     }
@@ -168,7 +170,7 @@ export default function AmbitHome({ params }: { params: { clientName: string } }
 
   const fetchInvoices = useCallback(async () => {
     if (!selectedDate.year || selectedDate.month<0 || !supabase) return;
-
+    
     // Define the start and end dates for the month
     const startDate = new Date(selectedDate.year, selectedDate.month, 1); // Start of the month
     const endDate = new Date(selectedDate.year, selectedDate.month + 1, 1); // Start of the next month
@@ -193,7 +195,12 @@ export default function AmbitHome({ params }: { params: { clientName: string } }
     );
   }, [selectedDate]);
 
+
+
+
   useEffect(() => {
+
+   
     fetchInvoices();
     if (!supabase) return;
 

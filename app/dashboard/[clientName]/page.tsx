@@ -498,7 +498,7 @@ export default function AmbitHome({ params }: { params: { clientName: string } }
                  <>
                    <TableRow className="opacity-0 animate-fade-in delay-[${2 * 100}ms]" >
                      <TableCell
-                       colSpan={8}
+                       colSpan={9}
                        className="text-center opacity-0 animate-fade-in delay-[${5 * 100}ms] text-[1.3rem] md:text-[2rem] h-[5rem]  MonaSans font-[600]"
                        style={{ animationDelay: `${5* 0.1}s` }}
                      >
@@ -508,7 +508,7 @@ export default function AmbitHome({ params }: { params: { clientName: string } }
                    </TableRow>
                    <TableRow className="opacity-0 animate-fade-in delay-[${3 * 100}ms]">
                      <TableCell
-                       colSpan={8}
+                       colSpan={9}
                        className="text-center text-[1rem] h-[2rem]  MonaSans font-[400]"
                      >
                        Click on{" "}

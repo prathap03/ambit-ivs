@@ -17,7 +17,7 @@ import { useCallback, useEffect, useState } from "react";
 import * as XLSX from "xlsx";
 import * as XLSXStyle from "sheetjs-style";
 import { supabase } from "@/util/supabaseClient";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter} from "next/navigation";
 import { DropdownMenu } from "@radix-ui/react-dropdown-menu";
 import { DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { FiMoreHorizontal, FiTrash2 } from "react-icons/fi";
@@ -443,7 +443,7 @@ export default function AmbitHome({ params }: { params: { clientName: string } }
                 <>
                   <TableRow className="opacity-0 animate-fade-in delay-[${index * 100}ms]">
                     <TableCell
-                      colSpan={8}
+                      colSpan={9}
                       className="text-center text-[1.3rem] md:text-[2rem] h-[5rem]  MonaSans font-[600]"
                     >
                       No invoices found for {months[selectedDate.month]},{" "}
@@ -452,8 +452,8 @@ export default function AmbitHome({ params }: { params: { clientName: string } }
                   </TableRow>
                   <TableRow className="opacity-0 animate-fade-in delay-[${index * 100}ms]">
                     <TableCell
-                      colSpan={8}
-                      className="text-center text-[1rem] h-[2rem]  MonaSans font-[400]"
+                      colSpan={10}
+                      className="text-center text-[1rem] h-[2rem]   MonaSans font-[400]"
                     >
                       Click on{" "}
                       <span className="font-semibold">

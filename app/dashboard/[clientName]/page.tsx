@@ -163,11 +163,11 @@ export default function AmbitHome({ params }: { params: { clientName: string } }
     XLSX.utils.book_append_sheet(
       wb,
       ws,
-      `${bankDetail.bank_code.toUpperCase()} Report - ${months[selectedDate.month]}, ${selectedDate.year}`
+      `${bankDetail.bank_code.toUpperCase()} Report - ${months[selectedDate.month].slice(0,3)}, ${selectedDate.year}`
     );
     XLSXStyle.writeFile(
       wb,
-      `${bankDetail.bank_code.toUpperCase()} Report - ${months[selectedDate.month]}, ${selectedDate.year}.xlsx`
+      `${bankDetail.bank_code.toUpperCase()} Report - ${months[selectedDate.month].slice(0,3)}, ${selectedDate.year}.xlsx`
     );
     return new Promise(resolve => setTimeout(resolve, 1000));;
   };

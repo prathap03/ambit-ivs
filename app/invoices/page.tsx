@@ -158,11 +158,11 @@ export default function AmbitHome({ params }: { params: { clientName: string } }
     XLSX.utils.book_append_sheet(
       wb,
       ws,
-      `${clientName} Report - ${months[selectedDate.month]}, ${selectedDate.year}`
+      `${clientName} Report - ${months[selectedDate.month].slice(0,4)}, ${selectedDate.year}`
     );
     XLSXStyle.writeFile(
       wb,
-      `${clientName} Report - ${months[selectedDate.month]}, ${selectedDate.year}.xlsx`
+      `${clientName} Report - ${months[selectedDate.month].slice(0,4)}, ${selectedDate.year}.xlsx`
     );
   };
 

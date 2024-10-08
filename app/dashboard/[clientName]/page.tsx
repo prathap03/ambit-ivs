@@ -212,15 +212,14 @@ export default function AmbitHome({ params }: { params: { clientName: string } }
       if (!selectedDate.year || selectedDate.month<0  ||!supabase) return;
 
     // Define the start and end dates for the month
-     const startDate = new Date(selectedDate.year, selectedDate.month, 1,-5,-30); // Start of the month
-    const endDate = new Date(selectedDate.year, selectedDate.month + 1, 1,-5,-30);
+     const startDate = new Date(selectedDate.year, selectedDate.month, 1,0,0,0); // Start of the month
+    const endDate = new Date(selectedDate.year, selectedDate.month + 1, 1,0,0,0); // Start of the next month
 
     const { data, error } = await supabase
       .from("invoices")
       .select("*")
-      .eq("bank_company_name", bank.bank_name)
-      .gte("date", startDate.toISOString()) // Greater than or equal to the start date
-      .lt("date", endDate.toISOString()) // Less than the start date of the next month
+      .gt("date", startDate.toISOString()) // Greater than or equal to the start date
+      .lte("date", endDate.toISOString()) // Less than the start date of the next month
       .order("date", { ascending: true });
 
     if (error) {

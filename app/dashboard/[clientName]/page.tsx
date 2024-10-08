@@ -212,8 +212,8 @@ export default function AmbitHome({ params }: { params: { clientName: string } }
       if (!selectedDate.year || selectedDate.month<0  ||!supabase) return;
 
     // Define the start and end dates for the month
-    const startDate = new Date(selectedDate.year, selectedDate.month, 1); // Start of the month
-    const endDate = new Date(selectedDate.year, selectedDate.month + 1, 1); // Start of the next month
+     const startDate = new Date(selectedDate.year, selectedDate.month, 1,-5,-30); // Start of the month
+    const endDate = new Date(selectedDate.year, selectedDate.month + 1, 1,-5,-30);
 
     const { data, error } = await supabase
       .from("invoices")

@@ -178,8 +178,8 @@ export default function AmbitHome({ params }: { params: { clientName: string } }
     const { data, error } = await supabase
       .from("invoices")
       .select("*")
-      .gte("date", startDate.toISOString()) // Greater than or equal to the start date
-      .lt("date", endDate.toISOString()) // Less than the start date of the next month
+      .gt("date", startDate.toISOString()) // Greater than or equal to the start date
+      .lte("date", endDate.toISOString()) // Less than the start date of the next month
       .order("date", { ascending: true });
 
     if (error) {

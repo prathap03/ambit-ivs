@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Bank } from "@/types";
 
-export default function CardList({ banks }: { banks: Array<Bank> }) {
+export default function CardList({ banks, invoiceCounts = {} }: { banks: Array<Bank>; invoiceCounts?: Record<string, number> }) {
   const sorted = [...banks].sort((a, b) => a.bank_name.localeCompare(b.bank_name));
 
   return (
@@ -32,6 +32,11 @@ export default function CardList({ banks }: { banks: Array<Bank> }) {
               {bank.bank_code && (
                 <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 uppercase tracking-wide">
                   {bank.bank_code}
+                </p>
+              )}
+              {(invoiceCounts[bank.bank_name] ?? 0) > 0 && (
+                <p className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 mt-1">
+                  {invoiceCounts[bank.bank_name]} this month
                 </p>
               )}
             </div>

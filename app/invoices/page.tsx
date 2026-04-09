@@ -14,8 +14,13 @@ import YearMonthPicker from "@/components/ui/year-month-picker";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { useCallback, useEffect, useState } from "react";
 import { exportInvoicesToExcel } from "@/utils/exportExcel";
+import { exportInvoicesToPdf } from "@/utils/exportPdf";
+import { useDebounce } from "@/lib/useDebounce";
 import { supabase } from "@/util/supabaseClient";
 import { useRouter } from "next/navigation";
+
+type SortKey = "date" | "client_name" | "bank_company_name" | "total_amount";
+type SortDir = "asc" | "desc";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -75,12 +80,33 @@ export default function OverallInvoices({ params }: { params: { clientName: stri
   const [loading, setLoading] = useState(true);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [sortKey, setSortKey] = useState<SortKey>("date");
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
   const navigator = useRouter();
+  const debouncedSearch = useDebounce(searchQuery, 300);
 
-  const filteredData = invoiceData.filter((inv) =>
-    inv.client_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (inv.bank_company_name?.toLowerCase() ?? "").includes(searchQuery.toLowerCase())
-  );
+  const filteredData = [...invoiceData]
+    .filter((inv) =>
+      inv.client_name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+      (inv.bank_company_name?.toLowerCase() ?? "").includes(debouncedSearch.toLowerCase())
+    )
+    .sort((a, b) => {
+      if (sortKey === "date") {
+        const diff = new Date(a.date).getTime() - new Date(b.date).getTime();
+        return sortDir === "asc" ? diff : -diff;
+      }
+      if (sortKey === "total_amount") {
+        return sortDir === "asc" ? a.total_amount - b.total_amount : b.total_amount - a.total_amount;
+      }
+      const va = (a[sortKey] ?? "").toString().toLowerCase();
+      const vb = (b[sortKey] ?? "").toString().toLowerCase();
+      return sortDir === "asc" ? va.localeCompare(vb) : vb.localeCompare(va);
+    });
+
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else { setSortKey(key); setSortDir("asc"); }
+  };
 
   useEffect(() => {
     document.title = "Overall Invoice Management";
@@ -192,6 +218,14 @@ export default function OverallInvoices({ params }: { params: { clientName: stri
           >
             Export Excel
           </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={totalAmount === 0}
+            onClick={() => exportInvoicesToPdf(invoiceData, totalAmount, "Overall", selectedDate.month, selectedDate.year, true)}
+          >
+            Export PDF
+          </Button>
         </div>
       </div>
 
@@ -214,19 +248,24 @@ export default function OverallInvoices({ params }: { params: { clientName: stri
             <TableHeader className="bg-gray-900 dark:bg-gray-800 sticky top-0 z-10">
               <TableRow className="border-0 hover:bg-transparent">
                 {[
-                  { h: "#", w: "w-8" },
-                  { h: "Date", w: "min-w-[90px]" },
-                  { h: "Client Name", w: "min-w-[140px]" },
-                  { h: "Bank / Finance", w: "min-w-[130px]" },
-                  { h: "File / App No.", w: "min-w-[110px]" },
-                  { h: "Opinion", w: "min-w-[100px]" },
-                  { h: "Vetting", w: "min-w-[100px]" },
-                  { h: "MODT", w: "min-w-[100px]" },
-                  { h: "Amount", w: "min-w-[90px] text-right" },
-                  { h: "", w: "w-8" },
-                ].map(({ h, w }) => (
-                  <TableHead key={h} className={`text-gray-200 font-semibold text-xs uppercase tracking-wide whitespace-nowrap py-3 ${w}`}>
-                    {h}
+                  { h: "#", w: "w-8", key: null },
+                  { h: "Date", w: "min-w-[90px]", key: "date" as SortKey },
+                  { h: "Client Name", w: "min-w-[140px]", key: "client_name" as SortKey },
+                  { h: "Bank / Finance", w: "min-w-[130px]", key: "bank_company_name" as SortKey },
+                  { h: "File / App No.", w: "min-w-[110px]", key: null },
+                  { h: "Opinion", w: "min-w-[100px]", key: null },
+                  { h: "Vetting", w: "min-w-[100px]", key: null },
+                  { h: "MODT", w: "min-w-[100px]", key: null },
+                  { h: "Amount", w: "min-w-[90px] text-right", key: "total_amount" as SortKey },
+                  { h: "", w: "w-8", key: null },
+                ].map(({ h, w, key }) => (
+                  <TableHead key={h || "actions"} className={`text-gray-200 font-semibold text-xs uppercase tracking-wide whitespace-nowrap py-3 ${w}`}>
+                    {key ? (
+                      <button onClick={() => toggleSort(key)} className="flex items-center gap-1 hover:text-white transition-colors">
+                        {h}
+                        <span className="opacity-60">{sortKey === key ? (sortDir === "asc" ? "▲" : "▼") : "▲▼"}</span>
+                      </button>
+                    ) : h}
                   </TableHead>
                 ))}
               </TableRow>

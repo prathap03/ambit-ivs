@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(npm run:*)",
-      "Bash(npm list:*)"
+      "Bash(npm list:*)",
+      "Bash(node -e \"require\\('jspdf'\\); console.log\\('ok'\\)\")"
     ]
   }
 }

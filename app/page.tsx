@@ -13,8 +13,23 @@ export default function Home() {
   const clientName = searchParams.get("clientName");
   const [banks, setBanks] = useState<any>([]);
   const [loading, setLoading] = useState(true);
+  const [invoiceCounts, setInvoiceCounts] = useState<Record<string, number>>({});
 
   
+  const fetchInvoiceCounts = useCallback(async () => {
+    if (!supabase) return;
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString();
+    const { data } = await supabase.from("invoices").select("bank_company_name").gt("date", start).lte("date", end);
+    if (!data) return;
+    const counts: Record<string, number> = {};
+    data.forEach((inv: { bank_company_name: string }) => {
+      if (inv.bank_company_name) counts[inv.bank_company_name] = (counts[inv.bank_company_name] || 0) + 1;
+    });
+    setInvoiceCounts(counts);
+  }, []);
+
   const fetchBanks = useCallback(async () => {
     try {
      if(!supabase){
@@ -39,6 +54,7 @@ export default function Home() {
   useEffect(() => {
     setLoading(true);
     fetchBanks();
+    fetchInvoiceCounts();
     if (!supabase) return;
 
     // Setting up real-time subscription
@@ -103,7 +119,7 @@ export default function Home() {
     <AuthGuard>
       <main className="flex h-full flex-col dark:bg-gray-950 overflow-hidden">
         <ScrollArea className="flex-1 h-full">
-          <CardList banks={banks} />
+          <CardList banks={banks} invoiceCounts={invoiceCounts} />
           <ScrollBar orientation="vertical" />
           <ScrollBar orientation="horizontal" />
         </ScrollArea>

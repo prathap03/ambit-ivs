@@ -23,7 +23,20 @@ export default function AddInvoice({ params }: { params: { clientId: string } })
   const [bankDetail, setBankDetail] = useState<Bank | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
   const navigator = useRouter();
+
+  useEffect(() => {
+    if (!isDirty) return;
+    const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ""; };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [isDirty]);
+
+  const handleBack = () => {
+    if (isDirty && !window.confirm("You have unsaved changes. Leave anyway?")) return;
+    navigator.back();
+  };
   const clientId = params.clientId;
 
   const totalAmount =
@@ -78,6 +91,7 @@ export default function AddInvoice({ params }: { params: { clientId: string } })
       return;
     }
 
+    setIsDirty(false);
     toast.success("Invoice added successfully!");
     setTimeout(() => navigator.back(), 800);
   };
@@ -111,7 +125,7 @@ export default function AddInvoice({ params }: { params: { clientId: string } })
       {/* Header */}
       <div className="flex items-center gap-3 px-5 py-4 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shrink-0">
         <button
-          onClick={() => navigator.back()}
+          onClick={handleBack}
           className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
         >
           <ArrowLeftIcon className="w-5 h-5 text-gray-600 dark:text-gray-300" />
@@ -134,7 +148,7 @@ export default function AddInvoice({ params }: { params: { clientId: string } })
               className={amountInputClass}
               placeholder="Enter client name"
               value={clientName}
-              onChange={(e) => setClientName(e.target.value)}
+              onChange={(e) => { setClientName(e.target.value); setIsDirty(true); }}
             />
           </div>
 

@@ -36,14 +36,15 @@ function KPICard({ label, value, sub, color }: { label: string; value: string; s
 export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const currentYear = new Date().getFullYear();
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const currentMonth = new Date().getMonth();
+  const yearOptions = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
 
   const fetchData = useCallback(async () => {
     if (!supabase) return;
-    // Fetch full year of data
-    const start = new Date(currentYear, 0, 1).toISOString();
-    const end = new Date(currentYear + 1, 0, 1).toISOString();
+    setLoading(true);
+    const start = new Date(selectedYear, 0, 1).toISOString();
+    const end = new Date(selectedYear + 1, 0, 1).toISOString();
     const { data } = await supabase
       .from("invoices")
       .select("*")
@@ -52,7 +53,7 @@ export default function AnalyticsPage() {
       .order("date", { ascending: true });
     if (data) setInvoices(data as Invoice[]);
     setLoading(false);
-  }, []);
+  }, [selectedYear]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -61,7 +62,7 @@ export default function AnalyticsPage() {
   // ── KPIs ──────────────────────────────────────────────────
   const thisMonthInvoices = invoices.filter((inv) => {
     const d = new Date(inv.date);
-    return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+    return d.getMonth() === currentMonth && d.getFullYear() === selectedYear;
   });
   const totalRevenue = invoices.reduce((s, inv) => s + inv.total_amount, 0);
   const monthRevenue = thisMonthInvoices.reduce((s, inv) => s + inv.total_amount, 0);
@@ -123,11 +124,22 @@ export default function AnalyticsPage() {
     <main className="flex flex-col h-full w-full overflow-y-auto bg-gray-50 dark:bg-gray-950">
       <div className="p-5 space-y-6 max-w-7xl mx-auto w-full pb-10">
         {/* Page header */}
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Analytics</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-            Revenue overview for {currentYear}
-          </p>
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Analytics</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+              Revenue overview for {selectedYear}
+            </p>
+          </div>
+          <select
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(Number(e.target.value))}
+            className="text-sm border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          >
+            {yearOptions.map((y) => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
         </div>
 
         {/* KPI Cards */}
@@ -160,7 +172,7 @@ export default function AnalyticsPage() {
 
         {/* Monthly Revenue Trend */}
         <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 shadow-sm">
-          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4">Monthly Revenue — {currentYear}</h2>
+          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4">Monthly Revenue — {selectedYear}</h2>
           <ResponsiveContainer width="100%" height={240}>
             <AreaChart data={monthlyData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
               <defs>

@@ -109,14 +109,12 @@ export default function Home() {
 
 
   return (
-    <main className="flex max-h-screen flex-col items-center justify-between dark:bg-black p-5 md:overflow-hidden">
-      <div className="flex outline-1 outline rounded-md shadow-md flex-grow h-screen w-full ">
-        <ScrollArea className="w-full  !h-[calc(100vh_-_145px)]">
-          <CardList banks={banks} />
-          <ScrollBar orientation="vertical" />
-          <ScrollBar orientation="horizontal" />
-        </ScrollArea>
-      </div>
+    <main className="flex h-full flex-col dark:bg-gray-950 overflow-hidden">
+      <ScrollArea className="flex-1 h-full">
+        <CardList banks={banks} />
+        <ScrollBar orientation="vertical" />
+        <ScrollBar orientation="horizontal" />
+      </ScrollArea>
     </main>
   );
 }

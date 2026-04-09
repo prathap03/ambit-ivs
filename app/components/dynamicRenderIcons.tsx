@@ -39,6 +39,10 @@ export const  getIconComponent = (icon: string) => {
       return <FiUsers size={size} />;
     case "settings":
       return <FiSettings size={size} />;
+    case "analytics":
+      return <TbReportAnalytics size={size} />;
+    case "users":
+      return <FiUsers size={size} />;
     case "reviews":
       return <LuFileCheck2 size={size} />;
     // Add cases for other icons

@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(wc -l /d/ambit-ivs/app/components/*.tsx /d/ambit-ivs/app/dashboard/[clientName]/*.tsx)"
+    ]
+  }
+}

@@ -1,41 +1,40 @@
 import Image from "next/image";
 import Link from "next/link";
-
-interface Bank {
-  id: any;
-  bank_name: string;
-  bank_logo_url: string;
-  bank_code: string;
-  bank_opinion_amount: number;
-  bank_vetting_amount: number;
-  bank_modtd_amount: number;
-  created_at: Date;
-}
+import { Bank } from "@/types";
 
 export default function CardList({ banks }: { banks: Array<Bank> }) {
-  banks.sort((a: any, b: any) => a.bank_name.localeCompare(b.bank_name));
+  const sorted = [...banks].sort((a, b) => a.bank_name.localeCompare(b.bank_name));
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 p-4">
-      {banks.map((bank, index) => (
-        <Link key={index} href={`/dashboard/${bank.id}`}>
+    <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 p-5">
+      {sorted.map((bank, index) => (
+        <Link key={bank.id} href={`/dashboard/${bank.id}`}>
           <div
-            className={`flex flex-col items-center justify-center h-[8rem] bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg hover:cursor-pointer group transition-transform duration-150 ease-in-out hover:scale-[105%] 
-            opacity-0 animate-fade-in delay-[${index * 100}ms]`}
-            style={{ animationDelay: `${index * 0.1}s` }}
+            className="group flex flex-col rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-indigo-300 dark:hover:border-indigo-600 hover:shadow-lg dark:hover:shadow-indigo-900/20 transition-all duration-200 cursor-pointer overflow-hidden opacity-0 animate-fade-in"
+            style={{ animationDelay: `${index * 0.07}s` }}
           >
-            <div className="overflow-hidden rounded-t-lg justify-center max-h-[8rem] w-[100%] flex flex-grow">
+            {/* Logo area */}
+            <div className="flex items-center justify-center bg-gray-50 dark:bg-gray-800 h-[6.5rem] overflow-hidden">
               <Image
                 src={bank.bank_logo_url}
                 alt={`${bank.bank_name} logo`}
-                width={100}
-                height={100}
-                className="object-fill w-[100%]"
+                width={120}
+                height={80}
+                className="object-contain w-full h-full p-2"
               />
             </div>
-            <h3 className="text-center group-hover:bg-blue-500 transition-all ease-linear rounded-b-lg bg-black w-[100%] text-lg font-semibold text-white dark:text-white">
-              {bank.bank_name}
-            </h3>
+
+            {/* Info area */}
+            <div className="px-3 py-2.5">
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                {bank.bank_name}
+              </h3>
+              {bank.bank_code && (
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 uppercase tracking-wide">
+                  {bank.bank_code}
+                </p>
+              )}
+            </div>
           </div>
         </Link>
       ))}

@@ -1,177 +1,123 @@
 "use client";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Button } from "@/components/ui/button";
-// import { LogOut, SquareUser } from "lucide-react";
-import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
+import { useState } from "react";
 import { RiMenu2Line } from "react-icons/ri";
-
-import FeatureLink from "./featureLink";
-import features from "../utils/features";
-import NavItems from "../utils/navItems";
+import { LuSun, LuMoon } from "react-icons/lu";
+import { useTheme } from "next-themes";
+import NavItems, { NavItem } from "../utils/navItems";
 import MenuLink from "./menuLink";
 import { useAuth } from "@/context/AuthContext";
 
 const Navbar = () => {
-  const [pathname, setpathname] = useState(usePathname());
-  const [sheetOpen, setSheetOpen] = useState<boolean>(false);
-  const router = useRouter();
-  const path = usePathname()
-  const {logout} = useAuth()
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const path = usePathname();
+  const { logout, isSuperAdmin, profile } = useAuth();
+  const { theme, setTheme } = useTheme();
 
-  useEffect(()=>{
-    setpathname(path)
-  },[path])
+  const showNav =
+    path &&
+    (path === "/" ||
+      path === "/invoices" ||
+      path === "/analytics" ||
+      path.includes("/settings"));
 
-//   const [userEmail, setuserEmail] = useState<any>("");
-  const [userProfile, setUserProfile] = useState<any>("");
-  const [loader, setloader] = useState<boolean>(true);
+  if (!showNav) return null;
 
-//   const [ProfileActive, setProfileActive] = useState<boolean>(false);
-//   useEffect(() => {
-//     const userDetails: any = localStorage.getItem("VotumUserDetails");
-//     try {
-//       const parsedUserDetails = JSON.parse(userDetails);
+  const visibleItems = NavItems.filter(
+    (item: NavItem) => !item.superAdminOnly || isSuperAdmin
+  );
 
-//       if (parsedUserDetails !== null && typeof parsedUserDetails === "object") {
-//         if (parsedUserDetails.email) {
-//           setuserEmail(parsedUserDetails.email);
-//         }
-//         if (parsedUserDetails.avatar_url) {
-//           setUserProfile(parsedUserDetails.avatar_url);
-//         }
-
-//         setloader(false);
-
-//         console.log("User ID:", parsedUserDetails.id);
-//         console.log("User Name:", parsedUserDetails.name);
-
-//         if (parsedUserDetails.isAdmin) {
-//           console.log("User is an admin");
-//         } else {
-//           console.log("User is not an admin");
-//         }
-//       } else {
-//         console.error("Invalid or empty parsedUserDetails");
-//       }
-//     } catch (error: any) {
-//       console.error("Error parsing JSON:", error.message);
-//     }
-//     // console.log(parsedUserDetails);
-//   }, []);
-
-
+  const ThemeToggle = () => (
+    <button
+      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+      className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-600 dark:text-gray-300"
+      aria-label="Toggle theme"
+    >
+      {theme === "dark" ? <LuSun size={16} /> : <LuMoon size={16} />}
+    </button>
+  );
 
   return (
-    // text-[#46494F]
- pathname && (pathname === '/' || pathname==="/invoices" || pathname.includes("/settings")) && (
-     <>
-      <div className="base:hidden bl:flex flex-col relative w-[min(18%,280px)] h-[95%] bg-transparent  text-[#72727b]">
-        <div
-          className="mt-[-2px] w-full py-[13px] px-[16px] flex justify-between items-center border-b-[2px] border-dotted
-         border-b-[#C5C6C8] "
-        >
-          {/* <img src="/images/VOTUM.png" width={100} /> */}
-          <h1 className="font-bold leading-5 tracking-wide">Invoice Management System</h1>
+    <>
+      {/* Desktop sidebar */}
+      <div className="base:hidden bl:flex flex-col w-[220px] shrink-0 h-full bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800">
+        {/* Brand */}
+        <div className="px-4 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+          <div>
+            <h1 className="font-bold text-sm tracking-tight text-gray-900 dark:text-white leading-tight">
+              Invoice Management
+            </h1>
+            <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">Ambit IVS</p>
+          </div>
+          <ThemeToggle />
         </div>
-        {/* #edeef2 (new) ---------------- #eeefff (old) */}
-        <div className="w-full navbarscrollOfHome h-[calc(100vh_-_157px)] pl-[13px] pr-[13px] flex flex-col mt-[4px] pt-[8px] gap-1 text-[#46494F] pb-[20px]">
-          {NavItems.map((navitem:any, idx:number) => (
+
+        {/* Nav */}
+        <nav className="flex-1 px-3 py-3 flex flex-col gap-0.5 overflow-y-auto">
+          {visibleItems.map((navitem: NavItem, idx: number) => (
             <MenuLink key={idx} setSheetOpen={setSheetOpen} item={navitem} />
           ))}
-          {/* {features.map((feature, idx: number) => (
-            <FeatureLink key={idx} setSheetOpen={setSheetOpen} item={feature} />
-          ))} */}
-          <div>
-      
-          </div>
-          
+        </nav>
+
+        {/* User + logout */}
+        <div className="px-3 py-3 border-t border-gray-100 dark:border-gray-800 space-y-1">
+          {profile && (
+            <div className="px-3 py-2">
+              <p className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">
+                {profile.full_name || profile.email}
+              </p>
+              <p className="text-[11px] text-gray-400 dark:text-gray-500 truncate">{profile.email}</p>
+            </div>
+          )}
+          <button
+            onClick={logout}
+            className="w-full py-2 px-3 rounded-lg text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-left"
+          >
+            Sign out
+          </button>
         </div>
-        <div className="flex flex-grow p-2 items-end h-full">
-           <Button className="w-full hover:bg-red-500" onClick={logout}>Logout</Button>
-           </div>
-        {/* <div className="absolute  bottom-[-1vh] flex justify-center items-center border-t-[1px] w-full px-[16px] py-[10px] bg-[#fbfbfb] z-[10]">
-          <DropdownMenu open={ProfileActive} onOpenChange={setProfileActive}>
-            <DropdownMenuTrigger asChild>
-              <div
-                onClick={(e) => setProfileActive(true)}
-                className={`w-full py-[7px] pl-[4px] cursor-pointer rounded-[6px] flex gap-3 items-center  ${
-                  ProfileActive === true
-                    ? "bg-white border-[2px] shadow-sm"
-                    : "bg-[#fbfbfb] hover:bg-[#f4f4f5]"
-                }  `}
-              >
-                <SquareUser size={20} color="#636F7E" />
-                <h2 className="flex items-center gap-3 text-[0.92rem] !font-[500]">
-                  Account
-                </h2>
-              </div>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className=" max-w-[400px] min-w-[min(16vw,370px)] border-[2px] bg-white z-[10] ">
-              <DropdownMenuItem asChild>
-                <SettingsComponenet />
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={logout}
-                className="flex items-center gap-[16px] text-[0.9rem] py-[8px] px-[10px]"
-              >
-                <LogOut size={20} color="#344054" />
-                Log out
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div> */}
       </div>
 
-      <div className="base:flex bl:hidden w-full py-[10px] h-[4rem] border-b-[2px]  flex justify-between  items-center">
-        <div className="px-[20px] py-[5px] flex justify-center items-center">
-          
-          <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-            <SheetTrigger asChild onClick={(e: any) => setSheetOpen(true)}>
-            
-              <RiMenu2Line size={20} color="#6c7290" />
-              
-            </SheetTrigger>
-            <SheetContent
-              side={"left"}
-              className="z-[100000] base:w-[85vw] md:w-[70vw] py-[30px] px-[20px] overflow-y-auto"
-            >
-              <div className="w-full flex">
-                <div className="flex justify-center items-center gap-3 select-none">
-                <h1 className="font-bold leading-5 tracking-wide">Invoice Management System</h1>
-                </div>
-              </div>
-              <div className="w-full flex flex-col mt-[30px] gap-[4px]">
-                {NavItems.map((navitem:any, idx:number) => (
-                  <MenuLink
-                    key={idx}
-                    setSheetOpen={setSheetOpen}
-                    item={navitem}
-                  />
-                ))}
-                {/* {features.map((feature, idx: number) => (
-                  <FeatureLink
-                    key={idx}
-                    setSheetOpen={setSheetOpen}
-                    item={feature}
-                  />
-                ))} */}
-              </div>
-            </SheetContent>
-          </Sheet>
-        </div>
-          <Button className="mr-2 hover:bg-red-500" onClick={logout}>Logout</Button>
+      {/* Mobile topbar */}
+      <div className="base:flex bl:hidden w-full h-14 shrink-0 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 justify-between items-center px-4">
+        <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+          <SheetTrigger asChild onClick={() => setSheetOpen(true)}>
+            <button className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+              <RiMenu2Line size={20} className="text-gray-600 dark:text-gray-300" />
+            </button>
+          </SheetTrigger>
+          <SheetContent
+            side="left"
+            className="base:w-[80vw] md:w-[60vw] py-6 px-4 overflow-y-auto bg-white dark:bg-gray-900 flex flex-col"
+          >
+            <div className="mb-5">
+              <h1 className="font-bold text-base tracking-tight text-gray-900 dark:text-white">Invoice Management</h1>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Ambit IVS</p>
+            </div>
+            <div className="flex flex-col gap-0.5 flex-1">
+              {visibleItems.map((navitem: NavItem, idx: number) => (
+                <MenuLink key={idx} setSheetOpen={setSheetOpen} item={navitem} />
+              ))}
+            </div>
+            <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
+              {profile && (
+                <p className="text-xs text-gray-400 mb-2 truncate px-3">{profile.email}</p>
+              )}
+              <button
+                onClick={logout}
+                className="w-full py-2 px-3 rounded-lg text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-left"
+              >
+                Sign out
+              </button>
+            </div>
+          </SheetContent>
+        </Sheet>
+
+        <span className="font-semibold text-sm text-gray-800 dark:text-white">Invoice Management</span>
+        <ThemeToggle />
       </div>
     </>
- )
   );
 };
 

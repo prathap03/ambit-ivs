@@ -1,12 +1,11 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
   TableFooter,
   TableHead,
@@ -14,10 +13,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import YearMonthPicker from "@/components/ui/year-month-picker";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"; // Use this instead of Radix UI's ScrollArea
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { useCallback, useEffect, useState } from "react";
-import * as XLSX from "xlsx";
-import * as XLSXStyle from "sheetjs-style";
+import { exportInvoicesToExcel } from "@/utils/exportExcel";
 import { supabase } from "@/util/supabaseClient";
 import { useRouter } from "next/navigation";
 import {
@@ -25,525 +23,368 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { FiExternalLink, FiMoreHorizontal, FiTrash2 } from "react-icons/fi";
-import { BiBlock, BiPencil } from "react-icons/bi";
-import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { FiMoreHorizontal, FiSearch, FiTrash2 } from "react-icons/fi";
+import { BiPencil } from "react-icons/bi";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import LoadingSpinner from "@/app/components/LoadingSpinner";
+import { Bank, Invoice } from "@/types";
+import Link from "next/link";
+import { ArrowLeftIcon } from "@radix-ui/react-icons";
+
+const MONTHS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString("en-IN", {
+    day: "2-digit", month: "short", year: "numeric",
+  });
+}
+
+function ServiceBadge({ label, amount }: { label: string; amount: number | null }) {
+  const colors: Record<string, string> = {
+    Opinion: "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border-blue-200 dark:border-blue-700",
+    Vetting: "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 border-emerald-200 dark:border-emerald-700",
+    MODT: "bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 border-amber-200 dark:border-amber-700",
+  };
+  return (
+    <span className={`inline-block px-1.5 py-0.5 rounded text-[11px] font-semibold border whitespace-nowrap ${colors[label]}`}>
+      {label} {amount}/-
+    </span>
+  );
+}
+
+interface DateValue {
+  year: number;
+  month: number;
+}
 
 export default function AmbitHome({ params }: { params: { clientName: string } }) {
-  let currDate = new Date();
-  const [selectedDate, setSelectedDate] = useState({ year: currDate.getFullYear() , month: currDate.getMonth() });
-  const [invoiceData, setInvoiceData] = useState<any[]>([]);
+  const currDate = new Date();
+  const [selectedDate, setSelectedDate] = useState<DateValue>({ year: currDate.getFullYear(), month: currDate.getMonth() });
+  const [invoiceData, setInvoiceData] = useState<Invoice[]>([]);
   const [totalAmount, setTotalAmount] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [deleteAlert, setDeleteAlert] = useState<boolean>(false);
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const navigator = useRouter();
-  const months = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
-  ];
   const clientName = params.clientName;
-  const [bankDetail, setBankDetail] = useState<any>(null);
+  const [bankDetail, setBankDetail] = useState<Bank | null>(null);
 
+  const filteredData = invoiceData.filter((inv) =>
+    inv.client_name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
-
- 
-
-  interface Date {
-    year: number;
-    month: number;
-  }
-
-  const deleteFunction = async (id:string) => {
-    if(!supabase){
-      return;
-    }
-    try{
-        const {data,error} = await supabase.from("invoices")
-        .delete()
-        .eq("id",id);
-
-        if(data){
-          toast.success("Invoice Removed")
-        }
-        if(error){
-          toast.error(error.message, {
-            position: "top-right",
-            autoClose: 5000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            theme: "colored",
-          });
-        }
-
-      } catch(error:any) {
-        toast.error(error.message, {
-          position: "top-right",
-          autoClose: 5000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          theme: "colored",
-        });
+  const deleteFunction = async (id: string) => {
+    if (!supabase) return;
+    try {
+      const { error } = await supabase.from("invoices").delete().eq("id", id);
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success("Invoice deleted");
       }
-      setDeleteAlert(false);
-    };
-
-
-  const downloadExcel = () => {
-    const wsData = invoiceData.map((data: any, index: number) => ({
-      "S.No #": (index + 1).toString(),
-      Name: data.client_name,
-      Date: data.date,
-      "File / Application Number": data.file_number,
-      Opinion: data.opinion ? `${data.opinion_amount}/-` : "-",
-      VETTING: data.vetting ? `${data.vetting_amount}/-` : "-",
-      MODTD: data.modt ? `${data.modt_amount}/-` : "-",
-      "AMOUNT IN RS": `${data.total_amount}/-`,
-    }));
-
-    wsData.push({
-      "S.No #": "Total",
-      Name: "",
-      Date: "",
-      "File / Application Number": "",
-      Opinion: "",
-      VETTING: "",
-      MODTD: "",
-      "AMOUNT IN RS": `₹ ${totalAmount}/-`,
-    });
-
-    const ws = XLSX.utils.json_to_sheet(wsData);
-
-    const headerStyle = {
-      font: { bold: true, color: { rgb: "FFFFFF" } },
-      fill: { fgColor: { rgb: "000000" } },
-      alignment: { horizontal: "center" },
-    };
-
-    const totalStyle = {
-      font: { bold: true, color: { rgb: "FFFFFF" } },
-      fill: { fgColor: { rgb: "000000" } },
-      alignment: { horizontal: "center" },
-    };
-
-    const range = XLSX.utils.decode_range(ws["!ref"] || "");
-    for (let C = range.s.c; C <= range.e.c; ++C) {
-      const address = XLSX.utils.encode_cell({ c: C, r: 0 });
-      if (!ws[address]) continue;
-      ws[address].s = headerStyle;
+    } catch (err: any) {
+      toast.error(err.message);
     }
-
-    const totalRow = range.e.r;
-    for (let C = range.s.c; C <= range.e.c; ++C) {
-      const address = XLSX.utils.encode_cell({ c: C, r: totalRow });
-      if (!ws[address]) continue;
-      ws[address].s = totalStyle;
-    }
-
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(
-      wb,
-      ws,
-      `${bankDetail.bank_code.toUpperCase()} Report - ${months[selectedDate.month].slice(0,3)}, ${selectedDate.year}`
-    );
-    XLSXStyle.writeFile(
-      wb,
-      `${bankDetail.bank_code.toUpperCase()} Report - ${months[selectedDate.month].slice(0,3)}, ${selectedDate.year}.xlsx`
-    );
-    return new Promise(resolve => setTimeout(resolve, 1000));;
+    setDeleteTargetId(null);
   };
 
-  const fetchBankDetails = async()=>{
-    if (!supabase) return;
-    try{
-    const {data,error} = await supabase.from("banks").select("*").eq("id",clientName);
+  const downloadExcel = (): Promise<void> => {
+    if (!bankDetail) return Promise.resolve();
+    return new Promise<void>((resolve) => {
+      exportInvoicesToExcel(
+        invoiceData,
+        totalAmount,
+        bankDetail.bank_code.toUpperCase(),
+        selectedDate.month,
+        selectedDate.year
+      );
+      resolve();
+    });
+  };
 
-      if(error){
-        console.error(error);
+  const fetchBankDetails = async (): Promise<Bank | null> => {
+    if (!supabase) return null;
+    try {
+      const { data, error } = await supabase.from("banks").select("*").eq("id", clientName);
+      if (error || !data?.length) {
+        setLoading(false);
+        return null;
+      }
+      document.title = `${data[0].bank_name} Management`;
+      setBankDetail(data[0]);
+      return data[0];
+    } catch {
+      setLoading(false);
+      return null;
+    }
+  };
+
+  const fetchInvoices = useCallback(async () => {
+    const bank = await fetchBankDetails();
+    if (!bank) {
+      toast.error("Bank not found");
+      setTimeout(() => navigator.push("/"), 1000);
+      return;
+    }
+    try {
+      if (!selectedDate.year || selectedDate.month < 0 || !supabase) return;
+      const startDate = new Date(selectedDate.year, selectedDate.month, 1, 0, 0, 0);
+      const endDate = new Date(selectedDate.year, selectedDate.month + 1, 1, 0, 0, 0);
+
+      const { data, error } = await supabase
+        .from("invoices")
+        .select("*")
+        .eq("bank_company_name", bank.bank_name)
+        .gt("date", startDate.toISOString())
+        .lte("date", endDate.toISOString())
+        .order("date", { ascending: true });
+
+      if (error) {
         setLoading(false);
         return;
       }
-      
-      if(data){
-        document.title = `${data[0].bank_name} Management`;
-        setBankDetail(data[0]);
-        return data[0];  
-      }
-      
-    }catch(error){
-      console.error(error);
-      setLoading(false);
+      setInvoiceData(data);
+      setTotalAmount(data.reduce((acc, inv) => acc + inv.total_amount, 0));
+    } catch {
+      // silently fail
     }
-   
-  }
-
- 
-
-  const fetchInvoices = useCallback(async () => {
-    const bank = await  fetchBankDetails();
-    if(!bank){
-      // setLoading(false);
-      toast.error("Bank not found");
-     setTimeout(() => {
-      navigator.push("/");
-     },1000)
-      return;
-    }
-    try{
-      if (!selectedDate.year || selectedDate.month<0  ||!supabase) return;
-
-    // Define the start and end dates for the month
-     const startDate = new Date(selectedDate.year, selectedDate.month, 1,0,0,0); // Start of the month
-    const endDate = new Date(selectedDate.year, selectedDate.month + 1, 1,0,0,0); // Start of the next month
-
-    const { data, error } = await supabase
-      .from("invoices")
-      .select("*")
-      .eq("bank_company_name", bank.bank_name)
-      .gt("date", startDate.toISOString()) // Greater than or equal to the start date
-      .lte("date", endDate.toISOString()) // Less than the start date of the next month
-      .order("date", { ascending: true });
-
-    if (error) {
-      console.error(error);
-      setLoading(false);
-      return;
-    }
-
-    setInvoiceData(data);
     setLoading(false);
-    setTotalAmount(
-      data.reduce((acc, invoice) => acc + invoice.total_amount, 0)
-    );
-    }catch(error){
-      console.error(error);
-      setLoading(false);
-    }
-    
   }, [selectedDate]);
 
   useEffect(() => {
     setLoading(true);
     if (!supabase) return;
-    
-    
-    
-   
     fetchInvoices();
 
-
-    // Setting up real-time subscription
     const channel = supabase
       .channel("invoice-channel")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "invoices" },
-
-      fetchInvoices
-      )
-      .on(
-        "postgres_changes",
-        { event: "DELETE", schema: "public", table: "invoices" },
-        fetchInvoices
-      )
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "invoices" },
-        (payload) => {
-          setInvoiceData((prev) => {
-            const updatedData = prev.map((invoice) =>
-              invoice.id === payload.new.id
-                ? { ...invoice, ...payload.new }
-                : invoice
-            );
-            // Calculate the new total amount after the update
-            const newTotalAmount = updatedData.reduce(
-              (acc, invoice) => acc + invoice.total_amount,
-              0
-            );
-            setTotalAmount(newTotalAmount);
-            return updatedData;
-          });
-        }
-      )
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "invoices" }, fetchInvoices)
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "invoices" }, fetchInvoices)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "invoices" }, (payload) => {
+        setInvoiceData((prev) => {
+          const updated = prev.map((inv) =>
+            inv.id === payload.new.id ? { ...inv, ...payload.new } : inv
+          );
+          setTotalAmount(updated.reduce((acc, inv) => acc + inv.total_amount, 0));
+          return updated;
+        });
+      })
       .subscribe();
-     
-    
 
-    return () => {
-      // Cleaning up the subscription
-      if (supabase) {
-        supabase.removeChannel(channel);
-      }
-    };
+    return () => { if (supabase) supabase.removeChannel(channel); };
   }, [selectedDate, fetchInvoices]);
 
-  const handleDateChange = (date: Date): void => {
-    setSelectedDate(date);
-    console.log("Selected Year:", date.year, "Selected Month:", date.month);
-  };
-
-  if(loading){
-    return (
-      <div className="min-h-screen flex flex-col bg-white border shadow-sm rounded-xl dark:bg-neutral-800 dark:border-neutral-700 dark:shadow-neutral-700/70">
-  <div className="flex flex-auto flex-col justify-center items-center p-4 md:p-5">
-    <div className="flex justify-center">
-      <div className="animate-spin inline-block size-6 border-[3px] border-current border-t-transparent text-black rounded-full dark:text-blue-500" role="status" aria-label="loading">
-        <span className="sr-only">Loading...</span>
-      </div>
-    </div>
-  </div>
-</div>
-    )
-  }
+  if (loading) return <LoadingSpinner />;
 
   return (
-    <main className="flex max-h-screen flex-col  w-[100%] items-center justify-between dark:bg-black p-5 md:overflow-hidden">
-{!loading ? (
-  <>
-        <div className="md:hidden mb-2 w-full text-md font-semibold">
-        Invoice Dashboard - {bankDetail && bankDetail.bank_name}
-       </div>
-       <div className="flex justify-between   w-full">
-         
-         <div>
-         <h1 className="hidden md:flex  w-full  font-semibold text-[1.5rem]">Invoice Dashboard - {bankDetail && bankDetail.bank_name}</h1>
-         </div>
-         <div className="flex justify-between md:justify-normal items-center  w-full md:w-auto gap-2">
-         <YearMonthPicker
-           selectedYear={selectedDate.year}
-           selectedMonth={selectedDate.month}
-           onChange={handleDateChange}
-         />
-         <Button
-           onClick={() => {
-            setLoading(true);
-             navigator.push("/addInvoice/"+bankDetail.id);
-           }}
-         >
-           Add Invoice
-         </Button>
-         <Button
-           disabled={totalAmount > 0 ? false : true}
-           onClick={()=>toast.promise(
-              downloadExcel,
-              {
-                pending: 'Generating Report',
-                success: 'Report Generated ✅',
-                error: 'Error in generating report ⚠️'
-              }
-          )
+    <main className="flex flex-col h-full w-full dark:bg-gray-950 p-4 gap-3 overflow-hidden">
+      {/* Header */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <Link
+            href="/"
+            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-500 dark:text-gray-400"
+          >
+            <ArrowLeftIcon className="w-4 h-4" />
+          </Link>
+          <div>
+            <h1 className="font-bold text-xl text-gray-900 dark:text-white">
+              {bankDetail?.bank_name}
+            </h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              {MONTHS[selectedDate.month]} {selectedDate.year}
+            </p>
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <YearMonthPicker
+            selectedYear={selectedDate.year}
+            selectedMonth={selectedDate.month}
+            onChange={(date: DateValue) => setSelectedDate(date)}
+          />
+          <Button
+            size="sm"
+            onClick={() => {
+              setLoading(true);
+              navigator.push("/addInvoice/" + bankDetail?.id);
+            }}
+          >
+            + Add Invoice
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={totalAmount === 0}
+            onClick={() =>
+              toast.promise(downloadExcel, {
+                pending: "Generating report…",
+                success: "Report generated ✅",
+                error: "Failed to generate report ⚠️",
+              })
             }
-         >
-           Generate 
-         </Button>
-         </div>
-       </div>
-       <div className="flex outline-1 outline rounded-md shadow-md flex-grow h-screen w-full m-5">
-         <ScrollArea  className="w-full  !h-[calc(100vh_-_145px)]">
-           <Table className="w-full">
-             <TableCaption className="opacity-0 animate-fade-in delay-[${7 * 100}ms]">
-               Details of {months[selectedDate.month]}, {selectedDate.year}
-             </TableCaption>
-             <TableHeader className="!border-b-[3px] !z-[10] bg-black">
-               <TableRow className="text-[0.9rem] border-b-[3px] MonaSans font-[600]">
-                 <TableHead className="base:min-w-[180px] text-white tv:w-[200px]">
-                   S.No #
-                 </TableHead>
-                 <TableHead className="base:min-w-[110px] text-white tv:w-[110px]">
-                   Date
-                 </TableHead>
-                 <TableHead className="base:min-w-[120px] text-white tv:w-[120px]">
-                   Name
-                 </TableHead>
-                 <TableHead className="base:min-w-[100px] text-white tv:w-[100px]">
-                   File / Application Number
-                 </TableHead>
-                 <TableHead className="base:min-w-[100px] text-white tv:w-[100px]">
-                   Opinion
-                 </TableHead>
-                 <TableHead className="base:min-w-[100px] text-white tv:w-[100px]">
-                   VETTING
-                 </TableHead>
-                 <TableHead className="base:min-w-[100px] text-white tv:w-[100px]">
-                   MODTD
-                 </TableHead>
-                 <TableHead className="base:min-w-[100px] text-white tv:w-[100px]">
-                   AMOUNT IN RS
-                 </TableHead>
-                 <TableHead className="base:min-w-[50px] text-white tv:w-[50px]"></TableHead>
-               </TableRow>
-             </TableHeader>
-             <TableBody>
-               {invoiceData.map((data: any, index) => (
-                 <TableRow
-                   key={index}
-                   className="text-[0.9rem] opacity-0 animate-fade-in delay-[${index * 100}ms] border-b-[1px] MonaSans font-[400]"
-                   style={{ animationDelay: `${index * 0.1}s` }}
-                 >
-                     <AlertDialog
-        open={deleteAlert}
-        onOpenChange={() => setDeleteAlert(false)}
-      >
-        <AlertDialogContent className="base:w-[90vw] tv:w-[400px] base:rounded-[10px] pb-[28px] !pt-[23px]">
+          >
+            Export Excel
+          </Button>
+        </div>
+      </div>
+
+      {/* Search */}
+      <div className="relative w-full max-w-sm">
+        <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={15} />
+        <input
+          type="text"
+          placeholder="Search by client name…"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        />
+      </div>
+
+      {/* Table */}
+      <div className="flex-1 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+        <ScrollArea className="h-full">
+          <Table>
+            <TableHeader className="bg-gray-900 dark:bg-gray-800 sticky top-0 z-10">
+              <TableRow className="border-0 hover:bg-transparent">
+                {[
+                  { h: "#", w: "w-8" },
+                  { h: "Date", w: "min-w-[90px]" },
+                  { h: "Client Name", w: "min-w-[140px]" },
+                  { h: "File / App No.", w: "min-w-[110px]" },
+                  { h: "Opinion", w: "min-w-[100px]" },
+                  { h: "Vetting", w: "min-w-[100px]" },
+                  { h: "MODT", w: "min-w-[100px]" },
+                  { h: "Amount", w: "min-w-[90px] text-right" },
+                  { h: "", w: "w-8" },
+                ].map(({ h, w }) => (
+                  <TableHead key={h} className={`text-gray-200 font-semibold text-xs uppercase tracking-wide whitespace-nowrap py-3 ${w}`}>
+                    {h}
+                  </TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredData.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={9} className="text-center py-20">
+                    <div className="text-gray-400 dark:text-gray-500">
+                      <p className="text-lg font-semibold mb-1">No invoices found</p>
+                      <p className="text-sm">
+                        {searchQuery
+                          ? "No results match your search"
+                          : `No invoices for ${MONTHS[selectedDate.month]} ${selectedDate.year}. Click "+ Add Invoice" to get started.`}
+                      </p>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredData.map((data, index) => (
+                  <TableRow
+                    key={data.id}
+                    className="border-b border-gray-100 dark:border-gray-800 even:bg-gray-50 dark:even:bg-gray-900/50 hover:bg-indigo-50/50 dark:hover:bg-indigo-900/10 transition-colors opacity-0 animate-fade-in"
+                    style={{ animationDelay: `${index * 0.04}s` }}
+                  >
+                    <TableCell className="text-gray-500 dark:text-gray-400 text-sm py-3 w-10">{index + 1}</TableCell>
+                    <TableCell className="text-sm whitespace-nowrap py-3">{formatDate(data.date)}</TableCell>
+                    <TableCell className="text-sm font-medium py-3">{data.client_name}</TableCell>
+                    <TableCell className="text-sm font-mono text-gray-600 dark:text-gray-300 py-3">{data.file_number}</TableCell>
+                    <TableCell className="py-3">
+                      {data.opinion ? <ServiceBadge label="Opinion" amount={data.opinion_amount} /> : <span className="text-gray-300 dark:text-gray-600">—</span>}
+                    </TableCell>
+                    <TableCell className="py-3">
+                      {data.vetting ? <ServiceBadge label="Vetting" amount={data.vetting_amount} /> : <span className="text-gray-300 dark:text-gray-600">—</span>}
+                    </TableCell>
+                    <TableCell className="py-3">
+                      {data.modt ? <ServiceBadge label="MODT" amount={data.modt_amount} /> : <span className="text-gray-300 dark:text-gray-600">—</span>}
+                    </TableCell>
+                    <TableCell className="text-right font-semibold tabular-nums py-3 pr-4">₹{data.total_amount}/-</TableCell>
+                    <TableCell className="py-3 w-10">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger onClick={(e) => e.stopPropagation()}>
+                          <FiMoreHorizontal size={18} className="cursor-pointer text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="w-[180px]">
+                          <DropdownMenuGroup>
+                            <DropdownMenuItem
+                              onClick={() => navigator.push("/dashboard/editInvoice/" + data.id)}
+                              className="flex items-center gap-3 text-sm py-2"
+                            >
+                              <BiPencil size={16} />
+                              Edit Invoice
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={(e) => { e.preventDefault(); setDeleteTargetId(data.id); }}
+                              className="flex items-center gap-3 text-sm py-2 text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-900/20"
+                            >
+                              <FiTrash2 size={16} />
+                              Delete Invoice
+                            </DropdownMenuItem>
+                          </DropdownMenuGroup>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+            {totalAmount > 0 && (
+              <TableFooter className="bg-gray-50 dark:bg-gray-900 border-t-2 border-gray-200 dark:border-gray-700">
+                <TableRow>
+                  <TableCell colSpan={7} className="font-semibold text-gray-700 dark:text-gray-300 py-3">
+                    Total ({filteredData.length} invoices)
+                  </TableCell>
+                  <TableCell className="text-right font-bold text-lg tabular-nums py-3 pr-4">
+                    ₹{filteredData.reduce((acc, inv) => acc + inv.total_amount, 0)}/-
+                  </TableCell>
+                  <TableCell />
+                </TableRow>
+              </TableFooter>
+            )}
+          </Table>
+          <ScrollBar orientation="vertical" />
+          <ScrollBar orientation="horizontal" />
+        </ScrollArea>
+      </div>
+
+      {/* Delete confirmation dialog (outside table) */}
+      <AlertDialog open={!!deleteTargetId} onOpenChange={() => setDeleteTargetId(null)}>
+        <AlertDialogContent className="w-[90vw] max-w-[400px] rounded-xl">
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              Confirm to delete the Invoice data
-            </AlertDialogTitle>
+            <AlertDialogTitle>Delete Invoice</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this Invoice Data?
+              Are you sure you want to delete this invoice? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="base:flex-row tv:flex-row base:justify-end base:gap-[10px]">
+          <AlertDialogFooter className="flex-row justify-end gap-2">
             <button
-              className="border-[2px] hover:bg-[#ededed] tracking-wide text-[0.8rem] font-[450] px-[10px] py-[2px] rounded-[4px]"
-              onClick={() => setDeleteAlert(false)}
+              className="border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+              onClick={() => setDeleteTargetId(null)}
             >
               Cancel
             </button>
             <button
-              className={"bg-white text-[#e5484d] hover:text-white hover:bg-[#e5484d] text-[0.8rem] tracking-wide font-[450] px-[10px] py-[2px] flex justify-center items-center gap-1 rounded-[4px] border-[#e5484d] border"}
-              onClick={()=>deleteFunction(data.id)}
+              className="bg-red-600 hover:bg-red-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+              onClick={() => deleteTargetId && deleteFunction(deleteTargetId)}
             >
               Delete
             </button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-                   <TableCell className="base:min-w-[180px] tv:w-[200px]">
-                     {index + 1}.
-                   </TableCell>
-                   <TableCell className="base:min-w-[110px] tv:w-[110px]">
-                     {data.date}
-                   </TableCell>
-                   <TableCell className="base:min-w-[120px] tv:w-[120px]">
-                     {data.client_name}
-                   </TableCell>
-                   <TableCell className="base:min-w-[100px] tv:w-[100px]">
-                     {data.file_number}
-                   </TableCell>
-                   <TableCell className="base:min-w-[100px] tv:w-[100px]">
-                     {data.opinion ? data.opinion_amount + "/-" : "-"}
-                   </TableCell>
-                   <TableCell className="base:min-w-[100px] tv:w-[100px]">
-                     {data.vetting ? data.vetting_amount + "/-" : "-"}
-                   </TableCell>
-                   <TableCell className="base:min-w-[100px] tv:w-[100px]">
-                     {data.modt ? data.modt_amount + "/-" : "-"}
-                   </TableCell>
-                   <TableCell className="base:min-w-[100px] tv:w-[100px]">
-                     {data.total_amount + "/-"}
-                   </TableCell>
-                   <TableCell className="base:min-w-[50px] tv:w-[50px]">
-                   <DropdownMenu>
-          <DropdownMenuTrigger
-            onClick={(e) => {
-              e.stopPropagation();
-            }}
-          >
-            <FiMoreHorizontal size={20} className="cursor-pointer" />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-[200px] px-[10px] py-[10px] ">
-            <DropdownMenuGroup>
-              <DropdownMenuItem
-                onClick={() => {
-                 navigator.push("/dashboard/editInvoice/"+data.id)
-                }}
-                className="flex items-center gap-[20px] text-[0.9rem] py-[8px] px-[10px]"
-              >
-                <BiPencil size={20} color="#344054" />
-                Edit Invoice
-              </DropdownMenuItem>
 
-        
-
-
-              <DropdownMenuItem
-                onClick={(e) => {
-                  e.stopPropagation();
-                  e.preventDefault();
-                  setDeleteAlert(true);
-                }}
-                className="flex items-center text-red-500 hover:text-red hover:bg-red-400 gap-[20px] text-[0.9rem] py-[8px] px-[10px]"
-              >
-                <FiTrash2 size={20} color="red" />
-                Delete Invoice
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
-                   </TableCell>
-                 </TableRow>
-               ))}
-               {totalAmount === 0 && (
-                 <>
-                   <TableRow className="opacity-0 animate-fade-in delay-[${2 * 100}ms]" >
-                     <TableCell
-                       colSpan={9}
-                       className="text-center opacity-0 animate-fade-in delay-[${5 * 100}ms] text-[1.3rem] md:text-[2rem] h-[5rem]  MonaSans font-[600]"
-                       style={{ animationDelay: `${5* 0.1}s` }}
-                     >
-                       No invoices found for {months[selectedDate.month]},{" "}
-                       {selectedDate.year}
-                     </TableCell>
-                   </TableRow>
-                   <TableRow className="opacity-0 animate-fade-in delay-[${3 * 100}ms]">
-                     <TableCell
-                       colSpan={9}
-                       className="text-center text-[1rem] h-[2rem]  MonaSans font-[400]"
-                     >
-                       Click on{" "}
-                       <span className="font-semibold">
-                         &quot;Add Invoice&quot;
-                       </span>{" "}
-                       to add new invoice
-                     </TableCell>
-                   </TableRow>
-                 </>
-               )}
-             </TableBody>
-             {totalAmount > 0 && (
-               <TableFooter className="opacity-0 animate-fade-in delay-[${5 * 100}ms]">
-                 <TableRow>
-                   <TableCell>Total</TableCell>
-                   <TableCell></TableCell>
-                   <TableCell></TableCell>
-                   <TableCell></TableCell>
-                   <TableCell></TableCell>
-                   <TableCell></TableCell>
-                   <TableCell></TableCell>
-                   <TableCell className="text-left ">₹ {totalAmount}/-</TableCell>
-                   <TableCell></TableCell>
-                 </TableRow>
-               </TableFooter>
-             )}
-           </Table>
-           <ScrollBar orientation="vertical" />
-           <ScrollBar orientation="horizontal" />
-         </ScrollArea>
-         <ToastContainer />
-       </div>
-       </>
-) : ("Loading")}
+      <ToastContainer position="bottom-right" theme="colored" />
     </main>
   );
 }

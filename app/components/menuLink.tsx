@@ -3,56 +3,38 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { getIconComponent } from "./dynamicRenderIcons";
 
-
 const MenuLink = ({ item, setSheetOpen }: { item: any; setSheetOpen: any }) => {
   const pathname = usePathname();
-  const isActive = pathname?.includes(item.name) || pathname === `/`;
-  
+  const isActive =
+    item.name === "home"
+      ? pathname === "/"
+      : item.name === "users"
+      ? pathname === "/settings/users"
+      : pathname === `/${item.name}` || pathname?.startsWith(`/${item.name}/`);
 
-  function ChangeLetters(inputString: string): string {
-    // Remove hyphens and replace with spaces
-    const processedString = inputString.replace(/-/g, " ");
-    return processedString;
+  function formatLabel(str: string): string {
+    return str.replace(/-/g, " ");
   }
 
-  return (
-    <>
-      <Link
-        href={`/${item.name!="home" ? item.name : ''}`}
-        onClick={(e) => setSheetOpen(false)}
-        style={
-          pathname
-            ? pathname.includes(item.name) === true || item.name==="home" && pathname === "/"
-              ? { backgroundColor: "#000", color: "#fff" }
-              : { width: "100%", color: "#71717a" }
-            : { width: "100%", color: "#71717a" }
-        }
-        className="capitalize pl-[8px] no-underline w-full py-[7px] cursor-pointer rounded-[6px] base:hidden bl:flex gap-3 items-center bg-transparent !hover:text-[#19191c]"
-      >
-        {getIconComponent(item.name)}
-        <h2 className="flex items-center gap-3 bl:text-[0.88rem] bbl:tex-[0.9rem] tracking-[0.3px] mt-[3px] !font-[500]">
-          {ChangeLetters(item.name)}
-        </h2>
-      </Link>
+  const baseClass =
+    "capitalize no-underline w-full py-2 px-3 cursor-pointer rounded-lg flex gap-3 items-center transition-colors text-sm font-medium";
 
-      <Link
-         href={`/${item.name!="home" ? item.name : ''}`}
-        onClick={(e) => setSheetOpen(false)}
-        style={
-          pathname
-            ? pathname.includes(item.name) === true || item.name==="home" && pathname === "/"
-              ? { backgroundColor: "#e8effe", color: "#5b89e9" }
-              : { width: "100%", color: "#71717a" }
-            : { width: "100%", color: "#71717a" }
-        }
-        className="capitalize no-underline w-full py-[10px] px-[10px] cursor-pointer rounded-[6px] base:flex bl:hidden gap-3 items-center bg-transparent"
-      >
-        {getIconComponent(item.name)}
-        <h2 className="flex items-center gap-3 text-[0.92rem] tracking-[0.3px] !font-[500]">
-          {ChangeLetters(item.name)}
-        </h2>
-      </Link>
-    </>
+  const activeClass =
+    "bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400";
+
+  const inactiveClass =
+    "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100";
+
+  return (
+    <Link
+      href={item.name === "home" ? "/" : item.name === "users" ? "/settings/users" : `/${item.name}`}
+      onClick={() => setSheetOpen(false)}
+      className={`${baseClass} ${isActive ? activeClass : inactiveClass}`}
+    >
+      {getIconComponent(item.name)}
+      <span className="tracking-[0.2px] mt-[2px]">{formatLabel(item.name)}</span>
+    </Link>
   );
 };
+
 export default MenuLink;

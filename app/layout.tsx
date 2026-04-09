@@ -3,12 +3,10 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import Navbar from "./components/navbar";
 import { AuthProvider } from "../context/AuthContext";
-
+import { ThemeProvider } from "next-themes";
 import { Suspense } from "react";
 
-
 const inter = Inter({ subsets: ["latin"] });
-
 
 export const metadata: Metadata = {
   title: `Invoice management`,
@@ -21,19 +19,22 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-      <AuthProvider>
-      <main className="MonaSans  w-[100vw] min-h-[100vh] h-[100vh] flex base:flex-col bl:flex-row items-center base:bg-white bl:bg-[#fbfbfb] overflow-hidden">
-      <Navbar />
-      <div className="base:w-full flex-grow bl:w-auto bl:flex-1  bl:pt-[10px] base:h-full border-l-[1.8px] overflow-hidden ">
-      <Suspense fallback={null}>
-           
-        {children}
-        </Suspense>
-      </div>
-    </main>
-    </AuthProvider>
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+          <AuthProvider>
+            <main className="MonaSans w-screen h-screen flex base:flex-col bl:flex-row base:bg-white dark:bg-gray-950 bl:bg-[#f8f9fa] dark:bl:bg-gray-950 overflow-hidden">
+              <Navbar />
+              <div className="flex-1 min-w-0 h-full bl:border-l bl:border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col">
+                <Suspense fallback={null} >
+                  <div className="flex-1 h-full overflow-hidden">
+                    {children}
+                  </div>
+                </Suspense>
+              </div>
+            </main>
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

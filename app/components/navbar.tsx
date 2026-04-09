@@ -48,7 +48,7 @@ const Navbar = () => {
             <h1 className="font-bold text-sm tracking-tight text-gray-900 dark:text-white leading-tight">
               Invoice Management
             </h1>
-            <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">Ambit IVS</p>
+            <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">IVS</p>
           </div>
           <ThemeToggle />
         </div>

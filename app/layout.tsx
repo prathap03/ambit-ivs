@@ -21,7 +21,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
           <AuthProvider>
             <main className="MonaSans w-screen h-screen flex base:flex-col bl:flex-row base:bg-white dark:bg-gray-950 bl:bg-[#f8f9fa] dark:bl:bg-gray-950 overflow-hidden">
               <Navbar />

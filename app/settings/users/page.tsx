@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/util/supabaseClient";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
+
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import LoadingSpinner from "@/app/components/LoadingSpinner";
@@ -24,7 +25,7 @@ interface UserAccess {
 }
 
 export default function UsersPage() {
-  const { isSuperAdmin, isLoggedIn } = useAuth();
+  const { isSuperAdmin, profile } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -38,10 +39,10 @@ export default function UsersPage() {
   const [inviting, setInviting] = useState(false);
 
   useEffect(() => {
-    if (!isLoggedIn) { router.push("/login"); return; }
-    if (isLoggedIn && !isSuperAdmin) { router.push("/"); return; }
+    if (!profile) return; // wait for profile to load
+    if (!isSuperAdmin) { router.push("/"); return; }
     loadData();
-  }, [isLoggedIn, isSuperAdmin]);
+  }, [profile, isSuperAdmin]);
 
   const loadData = async () => {
     if (!supabase) return;

@@ -2,8 +2,6 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/util/supabaseClient";
-import { useAuth } from "@/context/AuthContext";
-import { useRouter } from "next/navigation";
 import LoadingSpinner from "@/app/components/LoadingSpinner";
 import { Invoice } from "@/types";
 import {
@@ -36,16 +34,10 @@ function KPICard({ label, value, sub, color }: { label: string; value: string; s
 }
 
 export default function AnalyticsPage() {
-  const { isLoggedIn } = useAuth();
-  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth();
-
-  useEffect(() => {
-    if (!isLoggedIn) router.push("/login");
-  }, [isLoggedIn]);
 
   const fetchData = useCallback(async () => {
     if (!supabase) return;

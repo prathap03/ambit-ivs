@@ -18,6 +18,7 @@ export interface AuthContextType {
   bankAccess: BankAccess[];
   isLoggedIn: boolean;
   isSuperAdmin: boolean;
+  loading: boolean;
   canWriteBank: (bankId: string) => boolean;
   login: (email: string, password: string) => Promise<string | null>;
   logout: () => Promise<void>;
@@ -29,6 +30,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<AuthContextType["profile"]>(null);
   const [bankAccess, setBankAccess] = useState<BankAccess[]>([]);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   const fetchProfile = async (userId: string) => {
@@ -51,18 +53,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   useEffect(() => {
-    if (!supabase) return;
+    if (!supabase) {
+      setLoading(false);
+      return;
+    }
 
-    // Initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        setUser(session.user);
-        fetchProfile(session.user.id);
-        fetchBankAccess(session.user.id);
-      }
-    });
-
-    // Listen for auth changes
+    // onAuthStateChange fires INITIAL_SESSION immediately in Supabase v2,
+    // so it's the single source of truth for both auth state and loading.
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         setUser(session.user);
@@ -73,6 +70,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setProfile(null);
         setBankAccess([]);
       }
+      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
@@ -107,6 +105,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         bankAccess,
         isLoggedIn: !!user,
         isSuperAdmin,
+        loading,
         canWriteBank,
         login,
         logout,

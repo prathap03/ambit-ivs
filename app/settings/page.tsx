@@ -7,7 +7,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 
 import { supabase } from "@/util/supabaseClient";
-import { useAuth } from "@/context/AuthContext";
 import { Separator } from "@radix-ui/react-dropdown-menu";
 import { Button } from "@/components/ui/button";
 import CardList from "./components/cardList";
@@ -15,7 +14,6 @@ import { FiPlus } from "react-icons/fi";
 
 export default function Home() {
   const navigator = useRouter();
-  const { isLoggedIn } = useAuth();
   const searchParams = useSearchParams();
   const clientName = searchParams.get("clientName");
   const [banks, setBanks] = useState<any>([]);
@@ -87,13 +85,6 @@ export default function Home() {
     };
   }, [fetchBanks]);
 
-  useEffect(() => {
-    setLoading(true);
-    if (!isLoggedIn) {
-      navigator.push("/login");
-    }
-    
-  }, [isLoggedIn]);
 
   if(loading){
     return (

@@ -1,7 +1,7 @@
 "use client";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { RiMenu2Line } from "react-icons/ri";
 import { LuSun, LuMoon } from "react-icons/lu";
 import { useTheme } from "next-themes";
@@ -11,9 +11,12 @@ import { useAuth } from "@/context/AuthContext";
 
 const Navbar = () => {
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const path = usePathname();
   const { logout, isSuperAdmin, profile } = useAuth();
   const { theme, setTheme } = useTheme();
+
+  useEffect(() => setMounted(true), []);
 
   const showNav =
     path &&
@@ -34,7 +37,7 @@ const Navbar = () => {
       className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-600 dark:text-gray-300"
       aria-label="Toggle theme"
     >
-      {theme === "dark" ? <LuSun size={16} /> : <LuMoon size={16} />}
+      {mounted && (theme === "dark" ? <LuSun size={16} /> : <LuMoon size={16} />)}
     </button>
   );
 

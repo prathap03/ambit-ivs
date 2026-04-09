@@ -3,14 +3,12 @@
 import YearMonthPicker from "@/components/ui/year-month-picker";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"; // Use this instead of Radix UI's ScrollArea
 import { useCallback, useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import CardList from "./components/cardList";
-import { useAuth } from "../context/AuthContext";
+import AuthGuard from "./components/authGuard";
 import { supabase } from "@/util/supabaseClient";
 
 export default function Home() {
-  const navigator = useRouter();
-  const { isLoggedIn } = useAuth();
   const searchParams = useSearchParams();
   const clientName = searchParams.get("clientName");
   const [banks, setBanks] = useState<any>([]);
@@ -82,13 +80,6 @@ export default function Home() {
     };
   }, [fetchBanks]);
 
-  useEffect(() => {
-    setLoading(true);
-    if (!isLoggedIn) {
-      navigator.push("/login");
-    }
-    
-  }, [isLoggedIn]);
 
   if(loading){
     return (
@@ -109,12 +100,14 @@ export default function Home() {
 
 
   return (
-    <main className="flex h-full flex-col dark:bg-gray-950 overflow-hidden">
-      <ScrollArea className="flex-1 h-full">
-        <CardList banks={banks} />
-        <ScrollBar orientation="vertical" />
-        <ScrollBar orientation="horizontal" />
-      </ScrollArea>
-    </main>
+    <AuthGuard>
+      <main className="flex h-full flex-col dark:bg-gray-950 overflow-hidden">
+        <ScrollArea className="flex-1 h-full">
+          <CardList banks={banks} />
+          <ScrollBar orientation="vertical" />
+          <ScrollBar orientation="horizontal" />
+        </ScrollArea>
+      </main>
+    </AuthGuard>
   );
 }

@@ -254,41 +254,7 @@ export default function AnalyticsPage() {
           </div>
         </div>
 
-        {/* Top Clients */}
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 shadow-sm">
-          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4">Top Clients by Revenue</h2>
-          {topClients.length === 0 ? (
-            <p className="text-sm text-gray-400">No invoices yet</p>
-          ) : (
-            <div className="space-y-2">
-              {topClients.map((client, i) => {
-                const pct = totalRevenue > 0 ? (client.total / totalRevenue) * 100 : 0;
-                return (
-                  <div key={i} className="flex items-center gap-3">
-                    <span className="text-xs font-medium text-gray-400 w-5 text-right shrink-0">{i + 1}</span>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-0.5">
-                        <span className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{client.name}</span>
-                        <span className="text-sm font-semibold text-gray-900 dark:text-white ml-4 shrink-0">
-                          ₹{client.total.toLocaleString("en-IN")}
-                        </span>
-                      </div>
-                      <div className="h-1.5 w-full bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-                        <div
-                          className="h-full rounded-full bg-indigo-500"
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
-                    </div>
-                    <span className="text-xs text-gray-400 w-14 text-right shrink-0">
-                      {client.count} inv.
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
+
       </div>
     </main>
   );

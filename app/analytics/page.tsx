@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/util/supabaseClient";
 import LoadingSpinner from "@/app/components/LoadingSpinner";
 import { Invoice } from "@/types";
+import { FiEye, FiEyeOff } from "react-icons/fi";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -23,12 +24,66 @@ import {
 const MONTHS_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const COLORS = ["#6366f1","#10b981","#f59e0b","#3b82f6","#ec4899","#14b8a6","#f97316","#8b5cf6"];
 
-function KPICard({ label, value, sub, color }: { label: string; value: string; sub?: string; color: string }) {
+function maskValue(value: string) {
+  return value.replace(/[0-9]/g, "•");
+}
+
+function KPICard({ label, value, sub, color, revealed }: { label: string; value: string; sub?: string; color: string; revealed?: boolean }) {
   return (
-    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 flex flex-col gap-1 shadow-sm">
+    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 flex flex-col gap-1 shadow-sm overflow-hidden">
       <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">{label}</p>
-      <p className={`text-2xl font-bold ${color}`}>{value}</p>
+      <p key={revealed ? "shown" : "hidden"} className={`text-2xl font-bold ${color} ${revealed ? "animate-reveal" : ""}`}>{value}</p>
       {sub && <p className="text-xs text-gray-400 dark:text-gray-500">{sub}</p>}
+    </div>
+  );
+}
+
+function RevealModal({ onCancel, onSubmit, error, submitting }: { onCancel: () => void; onSubmit: (password: string) => void; error: string; submitting: boolean }) {
+  const [password, setPassword] = useState("");
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800 p-6 w-full max-w-sm">
+        <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-1">Confirm password</h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Enter your password to reveal amounts.</p>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            onSubmit(password);
+          }}
+        >
+          <input
+            type="password"
+            autoFocus
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="••••••••"
+            className="w-full px-3 py-2.5 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
+          />
+          {error && (
+            <p className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded-lg mt-3">
+              {error}
+            </p>
+          )}
+          <div className="flex justify-end gap-2 mt-5">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="px-3 py-2 text-sm rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={submitting || !password}
+              className="px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white font-semibold rounded-lg shadow-sm transition-colors"
+            >
+              {submitting ? "Verifying…" : "Reveal"}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
@@ -37,8 +92,33 @@ export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [hideAmounts, setHideAmounts] = useState(true);
+  const [showRevealModal, setShowRevealModal] = useState(false);
+  const [revealError, setRevealError] = useState("");
+  const [revealing, setRevealing] = useState(false);
   const currentMonth = new Date().getMonth();
   const yearOptions = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
+
+  const handleReveal = useCallback(async (password: string) => {
+    if (!supabase) return;
+    setRevealing(true);
+    setRevealError("");
+    const { data: userData } = await supabase.auth.getUser();
+    const email = userData?.user?.email;
+    if (!email) {
+      setRevealError("Could not verify current user.");
+      setRevealing(false);
+      return;
+    }
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    setRevealing(false);
+    if (error) {
+      setRevealError("Incorrect password.");
+      return;
+    }
+    setHideAmounts(false);
+    setShowRevealModal(false);
+  }, []);
 
   const fetchData = useCallback(async () => {
     if (!supabase) return;
@@ -131,36 +211,57 @@ export default function AnalyticsPage() {
               Revenue overview for {selectedYear}
             </p>
           </div>
-          <select
-            value={selectedYear}
-            onChange={(e) => setSelectedYear(Number(e.target.value))}
-            className="text-sm border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          >
-            {yearOptions.map((y) => (
-              <option key={y} value={y}>{y}</option>
-            ))}
-          </select>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                if (hideAmounts) {
+                  setRevealError("");
+                  setShowRevealModal(true);
+                } else {
+                  setHideAmounts(true);
+                }
+              }}
+              title={hideAmounts ? "Show amounts" : "Hide amounts"}
+              aria-label={hideAmounts ? "Show amounts" : "Hide amounts"}
+              className="p-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              {hideAmounts ? <FiEyeOff size={16} /> : <FiEye size={16} />}
+            </button>
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(Number(e.target.value))}
+              className="text-sm border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              {yearOptions.map((y) => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+          </div>
         </div>
 
         {/* KPI Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <KPICard
             label="Year-to-date Revenue"
-            value={`₹${totalRevenue.toLocaleString("en-IN")}`}
+            value={hideAmounts ? maskValue(`₹${totalRevenue.toLocaleString("en-IN")}`) : `₹${totalRevenue.toLocaleString("en-IN")}`}
             sub={`${invoices.length} invoices`}
             color="text-indigo-600 dark:text-indigo-400"
+            revealed={!hideAmounts}
           />
           <KPICard
             label={`${MONTHS_SHORT[currentMonth]} Revenue`}
-            value={`₹${monthRevenue.toLocaleString("en-IN")}`}
+            value={hideAmounts ? maskValue(`₹${monthRevenue.toLocaleString("en-IN")}`) : `₹${monthRevenue.toLocaleString("en-IN")}`}
             sub={`${thisMonthInvoices.length} invoices this month`}
             color="text-emerald-600 dark:text-emerald-400"
+            revealed={!hideAmounts}
           />
           <KPICard
             label="Avg per Invoice"
-            value={`₹${avgPerInvoice.toLocaleString("en-IN")}`}
+            value={hideAmounts ? maskValue(`₹${avgPerInvoice.toLocaleString("en-IN")}`) : `₹${avgPerInvoice.toLocaleString("en-IN")}`}
             sub="across all invoices"
             color="text-amber-600 dark:text-amber-400"
+            revealed={!hideAmounts}
           />
           <KPICard
             label="Active Banks"
@@ -183,10 +284,10 @@ export default function AnalyticsPage() {
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#374151" strokeOpacity={0.2} />
               <XAxis dataKey="month" tick={{ fontSize: 11, fill: "#9ca3af" }} />
-              <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickFormatter={(v) => `₹${(v/1000).toFixed(0)}k`} />
+              <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickFormatter={(v) => hideAmounts ? "••" : `₹${(v/1000).toFixed(0)}k`} />
               <Tooltip
                 contentStyle={tooltipStyle}
-                formatter={(v: any) => [`₹${Number(v).toLocaleString("en-IN")}`, "Revenue"]}
+                formatter={(v: any) => [hideAmounts ? maskValue(`₹${Number(v).toLocaleString("en-IN")}`) : `₹${Number(v).toLocaleString("en-IN")}`, "Revenue"]}
               />
               <Area type="monotone" dataKey="Revenue" stroke="#6366f1" strokeWidth={2} fill="url(#revenueGrad)" />
             </AreaChart>
@@ -202,10 +303,10 @@ export default function AnalyticsPage() {
               <BarChart data={serviceData} margin={{ top: 0, right: 10, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151" strokeOpacity={0.2} />
                 <XAxis dataKey="month" tick={{ fontSize: 11, fill: "#9ca3af" }} />
-                <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickFormatter={(v) => `₹${(v/1000).toFixed(0)}k`} />
+                <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickFormatter={(v) => hideAmounts ? "••" : `₹${(v/1000).toFixed(0)}k`} />
                 <Tooltip
                   contentStyle={tooltipStyle}
-                  formatter={(v: any, name: any) => [`₹${Number(v).toLocaleString("en-IN")}`, name]}
+                  formatter={(v: any, name: any) => [hideAmounts ? maskValue(`₹${Number(v).toLocaleString("en-IN")}`) : `₹${Number(v).toLocaleString("en-IN")}`, name]}
                 />
                 <Legend iconSize={10} wrapperStyle={{ fontSize: 11 }} />
                 <Bar dataKey="Opinion" stackId="a" fill="#6366f1" radius={[0,0,0,0]} />
@@ -237,7 +338,7 @@ export default function AnalyticsPage() {
                     </Pie>
                     <Tooltip
                       contentStyle={tooltipStyle}
-                      formatter={(v: any) => [`₹${Number(v).toLocaleString("en-IN")}`, "Revenue"]}
+                      formatter={(v: any) => [hideAmounts ? maskValue(`₹${Number(v).toLocaleString("en-IN")}`) : `₹${Number(v).toLocaleString("en-IN")}`, "Revenue"]}
                     />
                   </PieChart>
                 </ResponsiveContainer>
@@ -247,8 +348,11 @@ export default function AnalyticsPage() {
                     <div key={i} className="flex items-center gap-2 text-xs">
                       <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
                       <span className="truncate text-gray-600 dark:text-gray-300">{entry.name}</span>
-                      <span className="ml-auto font-medium text-gray-800 dark:text-gray-200 shrink-0">
-                        ₹{entry.value.toLocaleString("en-IN")}
+                      <span
+                        key={hideAmounts ? "hidden" : "shown"}
+                        className={`ml-auto font-medium text-gray-800 dark:text-gray-200 shrink-0 ${!hideAmounts ? "animate-reveal" : ""}`}
+                      >
+                        {hideAmounts ? maskValue(`₹${entry.value.toLocaleString("en-IN")}`) : `₹${entry.value.toLocaleString("en-IN")}`}
                       </span>
                     </div>
                   ))}
@@ -260,6 +364,14 @@ export default function AnalyticsPage() {
 
 
       </div>
+      {showRevealModal && (
+        <RevealModal
+          onCancel={() => setShowRevealModal(false)}
+          onSubmit={handleReveal}
+          error={revealError}
+          submitting={revealing}
+        />
+      )}
     </main>
   );
 }

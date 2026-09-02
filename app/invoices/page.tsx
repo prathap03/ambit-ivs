@@ -15,6 +15,7 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { useCallback, useEffect, useState } from "react";
 import { exportInvoicesToExcel } from "@/utils/exportExcel";
 import { exportInvoicesToPdf } from "@/utils/exportPdf";
+import { exportInvoiceToPdf } from "@/utils/exportInvoicePdf";
 import { useDebounce } from "@/lib/useDebounce";
 import { supabase } from "@/util/supabaseClient";
 import { useRouter } from "next/navigation";
@@ -28,7 +29,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { FiMoreHorizontal, FiSearch, FiTrash2 } from "react-icons/fi";
+import { FiMoreHorizontal, FiSearch, FiTrash2, FiDownload } from "react-icons/fi";
 import { BiPencil } from "react-icons/bi";
 import {
   AlertDialog,
@@ -319,6 +320,13 @@ export default function OverallInvoices({ params }: { params: { clientName: stri
                             >
                               <BiPencil size={16} />
                               Edit Invoice
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => exportInvoiceToPdf(data)}
+                              className="flex items-center gap-3 text-sm py-2"
+                            >
+                              <FiDownload size={16} />
+                              Download Invoice
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={(e) => { e.preventDefault(); setDeleteTargetId(data.id); }}

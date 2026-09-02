@@ -9,6 +9,65 @@ import { ArrowLeftIcon } from "@radix-ui/react-icons";
 import { ScrollBar } from "@/components/ui/scroll-area";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { FiTrash2 } from "react-icons/fi";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
+function PasswordConfirmModal({ onCancel, onSubmit, error, submitting }: { onCancel: () => void; onSubmit: (password: string) => void; error: string; submitting: boolean }) {
+  const [password, setPassword] = useState("");
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800 p-6 w-full max-w-sm">
+        <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-1">Confirm password</h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Enter your password to permanently delete this bank.</p>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            onSubmit(password);
+          }}
+        >
+          <input
+            type="password"
+            autoFocus
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="••••••••"
+            className="w-full px-3 py-2.5 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors"
+          />
+          {error && (
+            <p className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded-lg mt-3">
+              {error}
+            </p>
+          )}
+          <div className="flex justify-end gap-2 mt-5">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="px-3 py-2 text-sm rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={submitting || !password}
+              className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white font-semibold rounded-lg shadow-sm transition-colors"
+            >
+              {submitting ? "Verifying…" : "Delete Bank"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
 
 export default function EditClient({
   params,
@@ -23,8 +82,40 @@ export default function EditClient({
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+  const [deleting, setDeleting] = useState(false);
   const navigator = useRouter();
   const clientId = params.clientId;
+
+  const handleDeleteBank = async (password: string) => {
+    if (!supabase) return;
+    setDeleting(true);
+    setDeleteError("");
+    const { data: userData } = await supabase.auth.getUser();
+    const email = userData?.user?.email;
+    if (!email) {
+      setDeleteError("Could not verify current user.");
+      setDeleting(false);
+      return;
+    }
+    const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
+    if (authError) {
+      setDeleteError("Incorrect password.");
+      setDeleting(false);
+      return;
+    }
+    const { error } = await supabase.from("banks").delete().eq("id", clientId);
+    setDeleting(false);
+    if (error) {
+      toast.error("There was an error deleting the bank. Please try again.");
+      return;
+    }
+    setShowPasswordModal(false);
+    toast.success("Bank deleted successfully!");
+    setTimeout(() => navigator.push("/settings"), 800);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -138,7 +229,15 @@ export default function EditClient({
               className="w-6 h-6 cursor-pointer hover:text-blue-500 ease-linear"
               onClick={() => navigator.back()}
             />
-            <h1 className="font-semibold text-2xl">Edit Bank — {bankDetail.bank_name}</h1>
+            <h1 className="font-semibold text-2xl flex-1">Edit Bank — {bankDetail.bank_name}</h1>
+            <button
+              type="button"
+              onClick={() => setShowDeleteConfirm(true)}
+              className="flex items-center gap-2 px-3 py-1.5 text-sm rounded-md bg-red-600 hover:bg-red-700 transition-colors"
+            >
+              <FiTrash2 size={14} />
+              Delete Bank
+            </button>
           </div>
           <ScrollArea className="flex w-full overflow-x-auto flex-grow p-4">
             <form className="flex flex-col w-full space-y-4" onSubmit={handleSubmit}>
@@ -227,6 +326,45 @@ export default function EditClient({
       ) : (
         <div className="flex items-center justify-center h-full text-gray-500">Bank not found</div>
       )}
+
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent className="w-[90vw] max-w-[400px] rounded-xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Bank</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to permanently delete <strong>{bankDetail?.bank_name}</strong>? All associated data will remain in past invoices, but this bank will be removed. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row justify-end gap-2">
+            <button
+              className="border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+              onClick={() => setShowDeleteConfirm(false)}
+            >
+              Cancel
+            </button>
+            <button
+              className="bg-red-600 hover:bg-red-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+              onClick={() => {
+                setShowDeleteConfirm(false);
+                setDeleteError("");
+                setShowPasswordModal(true);
+              }}
+            >
+              Continue
+            </button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {showPasswordModal && (
+        <PasswordConfirmModal
+          onCancel={() => setShowPasswordModal(false)}
+          onSubmit={handleDeleteBank}
+          error={deleteError}
+          submitting={deleting}
+        />
+      )}
+
       <ToastContainer position="top-right" theme="colored" />
     </div>
   );
